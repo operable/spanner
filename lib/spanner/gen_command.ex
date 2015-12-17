@@ -185,7 +185,10 @@ defmodule Spanner.GenCommand do
     # Establish a connection to the message bus and subscribe to
     # the appropriate topics
     {:ok, conn} = Carrier.Messaging.Connection.connect
-    [topic, reply_topic] = topics = [get_topic(module), get_reply_topic(module)]
+
+    relay_id = Carrier.CredentialManager.get().id
+
+    [topic, reply_topic] = topics = [get_topic(module, relay_id), get_reply_topic(module, relay_id)]
     for topic <- topics do
       Logger.debug("#{inspect module}: Command subscribing to #{topic}")
       Carrier.Messaging.Connection.subscribe(conn, topic)
@@ -243,10 +246,10 @@ defmodule Spanner.GenCommand do
 
   ########################################################################
 
-  defp get_topic(module),
-    do: "/bot/commands/#{module.bundle_name()}/#{module.command_name()}"
+  defp get_topic(module, relay_id),
+    do: "/bot/commands/#{relay_id}/#{module.bundle_name()}/#{module.command_name()}"
 
-  defp get_reply_topic(module),
-    do: "#{get_topic(module)}/reply"
+  defp get_reply_topic(module, relay_id),
+    do: "#{get_topic(module, relay_id)}/reply"
 
 end
