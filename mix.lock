@@ -1,5 +1,5 @@
 %{"adz": {:git, "git@github.com:operable/adz", "07ba970e0bec955f1f3ed1c4771511139924c7fd", [ref: "07ba970e0bec955f1f3ed1c4771511139924c7fd"]},
-  "carrier": {:git, "git@github.com:operable/carrier", "981db6c9a5698dee2b6966b99519c82fd68a6d54", [ref: "981db6c9a5698dee2b6966b99519c82fd68a6d54"]},
+  "carrier": {:git, "git@github.com:operable/carrier", "8cffbbc389b1cff4e9ea32a8a2952524f9812c41", [ref: "8cffbbc389b1cff4e9ea32a8a2952524f9812c41"]},
   "enacl": {:git, "https://github.com/jlouis/enacl.git", "9830068304e4472e22787ae8fbe4557dc5215403", [tag: "0.14.0"]},
   "piper": {:git, "git@github.com:operable/piper", "91495c22904a15c5bacbbd0a2bed743e76da967e", [ref: "91495c22904a15c5bacbbd0a2bed743e76da967e"]},
   "poison": {:hex, :poison, "1.5.0"},
