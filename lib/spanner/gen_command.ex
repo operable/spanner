@@ -26,6 +26,12 @@ defmodule Spanner.GenCommand do
   @type message_bus_topic() :: String.t
 
   @typedoc """
+  The basename of the template file, used to render the json output into a text
+  response.
+  """
+  @type template() :: String.t
+
+  @typedoc """
   Commands and services can send back arbitrary responses (as long
   as they can serialize to JSON).
   """
@@ -59,6 +65,7 @@ defmodule Spanner.GenCommand do
 
   @callback handle_message(Command.Request.t, callback_state())
             :: {:reply, message_bus_topic(), command_response(), callback_state()} |
+               {:reply, message_bus_topic(), template(), command_response(), callback_state()} |
                {:noreply, callback_state()}
 
   @doc "The name by which the command is referred to."
@@ -224,6 +231,9 @@ defmodule Spanner.GenCommand do
       {:ok, payload} ->
         req = Command.Request.decode!(payload)
         case state.cb_module.handle_message(req, state.cb_state) do
+          {:reply, reply_to, template, reply, cb_state} ->
+            new_state = %{state | cb_state: cb_state}
+            {:noreply, send_ok_reply(reply, template, reply_to, new_state)}
           {:reply, reply_to, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
             {:noreply, send_ok_reply(reply, reply_to, new_state)}
@@ -240,6 +250,12 @@ defmodule Spanner.GenCommand do
     do: {:noreply, state}
 
   ########################################################################
+
+  defp send_ok_reply(reply, template, reply_to, state) when is_map(reply) or is_list(reply) do
+    resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply, template: template})
+    Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
+    state
+  end
 
   defp send_ok_reply(reply, reply_to, state) when is_map(reply) or is_list(reply) do
     resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply})
