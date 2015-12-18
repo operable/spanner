@@ -35,7 +35,7 @@ defmodule Spanner.RequestResponse do
   def decode(key, struct, obj) when is_map(obj) do
     case Map.has_key?(obj, Atom.to_string(key)) do
       false ->
-        {:error, {Spanner.DecodeError.key_erro(key), obj}}
+        {:error, {Spanner.DecodeError.key_error(key), obj}}
       true ->
         obj = obj[Atom.to_string(key)]
         s = struct
