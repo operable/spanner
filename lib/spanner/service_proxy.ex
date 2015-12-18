@@ -60,9 +60,14 @@ defmodule Spanner.ServiceProxy do
                                          Service.Request.encode!(service_req),
                                          routed_by: "/bot/services/#{service_opts.service}")
     receive do
-      {:publish, ^reply_topic, response} ->
-        res = Service.Response.decode!(response)
-        res.response
+      {:publish, ^reply_topic, message} ->
+        case Carrier.Signature.extract_authenticated_payload(message) do
+          {:ok, payload} ->
+            res = Service.Response.decode!(payload)
+            res.response
+          {:error, _} ->
+            raise RuntimeError, message: "Message signature not verified! #{inspect message}"
+          end
     after timeout ->
         raise RuntimeError, message: "Timed out waiting for reply from #{service_opts.service}"
     end
