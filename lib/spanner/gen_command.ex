@@ -218,17 +218,22 @@ defmodule Spanner.GenCommand do
     end
   end
 
-  def handle_info({:publish, topic, payload},
+  def handle_info({:publish, topic, message},
                   %__MODULE__{topic: topic}=state) do
-    req = Command.Request.decode!(payload)
-
-    case state.cb_module.handle_message(req, state.cb_state) do
-      {:reply, reply_to, reply, cb_state} ->
-        new_state = %{state | cb_state: cb_state}
-        {:noreply, send_ok_reply(reply, reply_to, new_state)}
-      {:noreply, cb_state} ->
-        new_state = %{state | cb_state: cb_state}
-        {:noreply, new_state}
+    case Carrier.Signature.extract_authenticated_payload(message) do
+      {:ok, payload} ->
+        req = Command.Request.decode!(payload)
+        case state.cb_module.handle_message(req, state.cb_state) do
+          {:reply, reply_to, reply, cb_state} ->
+            new_state = %{state | cb_state: cb_state}
+            {:noreply, send_ok_reply(reply, reply_to, new_state)}
+          {:noreply, cb_state} ->
+            new_state = %{state | cb_state: cb_state}
+            {:noreply, new_state}
+        end
+      {:error, _} ->
+        Logger.error("Message signature not verified! #{inspect message}")
+        {:noreply, state}
     end
   end
   def handle_info(_, state),
