@@ -26,6 +26,12 @@ defmodule Spanner.GenCommand do
   @type message_bus_topic() :: String.t
 
   @typedoc """
+  The basename of the template file, used to render the json output into a text
+  response.
+  """
+  @type template() :: String.t
+
+  @typedoc """
   Commands and services can send back arbitrary responses (as long
   as they can serialize to JSON).
   """
@@ -59,6 +65,7 @@ defmodule Spanner.GenCommand do
 
   @callback handle_message(Command.Request.t, callback_state())
             :: {:reply, message_bus_topic(), command_response(), callback_state()} |
+               {:reply, message_bus_topic(), template(), command_response(), callback_state()} |
                {:noreply, callback_state()}
 
   @doc "The name by which the command is referred to."
@@ -185,7 +192,10 @@ defmodule Spanner.GenCommand do
     # Establish a connection to the message bus and subscribe to
     # the appropriate topics
     {:ok, conn} = Carrier.Messaging.Connection.connect
-    [topic, reply_topic] = topics = [get_topic(module), get_reply_topic(module)]
+
+    relay_id = Carrier.CredentialManager.get().id
+
+    [topic, reply_topic] = topics = [get_topic(module, relay_id), get_reply_topic(module, relay_id)]
     for topic <- topics do
       Logger.debug("#{inspect module}: Command subscribing to #{topic}")
       Carrier.Messaging.Connection.subscribe(conn, topic)
@@ -215,23 +225,37 @@ defmodule Spanner.GenCommand do
     end
   end
 
-  def handle_info({:publish, topic, payload},
+  def handle_info({:publish, topic, message},
                   %__MODULE__{topic: topic}=state) do
-    req = Command.Request.decode!(payload)
-
-    case state.cb_module.handle_message(req, state.cb_state) do
-      {:reply, reply_to, reply, cb_state} ->
-        new_state = %{state | cb_state: cb_state}
-        {:noreply, send_ok_reply(reply, reply_to, new_state)}
-      {:noreply, cb_state} ->
-        new_state = %{state | cb_state: cb_state}
-        {:noreply, new_state}
+    case Carrier.Signature.extract_authenticated_payload(message) do
+      {:ok, payload} ->
+        req = Command.Request.decode!(payload)
+        case state.cb_module.handle_message(req, state.cb_state) do
+          {:reply, reply_to, template, reply, cb_state} ->
+            new_state = %{state | cb_state: cb_state}
+            {:noreply, send_ok_reply(reply, template, reply_to, new_state)}
+          {:reply, reply_to, reply, cb_state} ->
+            new_state = %{state | cb_state: cb_state}
+            {:noreply, send_ok_reply(reply, reply_to, new_state)}
+          {:noreply, cb_state} ->
+            new_state = %{state | cb_state: cb_state}
+            {:noreply, new_state}
+        end
+      {:error, _} ->
+        Logger.error("Message signature not verified! #{inspect message}")
+        {:noreply, state}
     end
   end
   def handle_info(_, state),
     do: {:noreply, state}
 
   ########################################################################
+
+  defp send_ok_reply(reply, template, reply_to, state) when is_map(reply) or is_list(reply) do
+    resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply, template: template})
+    Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
+    state
+  end
 
   defp send_ok_reply(reply, reply_to, state) when is_map(reply) or is_list(reply) do
     resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply})
@@ -243,10 +267,10 @@ defmodule Spanner.GenCommand do
 
   ########################################################################
 
-  defp get_topic(module),
-    do: "/bot/commands/#{module.bundle_name()}/#{module.command_name()}"
+  defp get_topic(module, relay_id),
+    do: "/bot/commands/#{relay_id}/#{module.bundle_name()}/#{module.command_name()}"
 
-  defp get_reply_topic(module),
-    do: "#{get_topic(module)}/reply"
+  defp get_reply_topic(module, relay_id),
+    do: "#{get_topic(module, relay_id)}/reply"
 
 end
