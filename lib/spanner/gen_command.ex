@@ -193,8 +193,7 @@ defmodule Spanner.GenCommand do
     # the appropriate topics
     {:ok, conn} = Carrier.Messaging.Connection.connect
 
-    relay_id = Carrier.CredentialManager.get().id
-
+    {:ok, %Carrier.Credentials{id: relay_id}} = Carrier.CredentialManager.get()
     [topic, reply_topic] = topics = [get_topic(module, relay_id), get_reply_topic(module, relay_id)]
     for topic <- topics do
       Logger.debug("#{inspect module}: Command subscribing to #{topic}")
@@ -227,8 +226,8 @@ defmodule Spanner.GenCommand do
 
   def handle_info({:publish, topic, message},
                   %__MODULE__{topic: topic}=state) do
-    case Carrier.Signature.extract_authenticated_payload(message) do
-      {:ok, payload} ->
+    case Carrier.CredentialManager.verify_signed_message(message) do
+      {true, payload} ->
         req = Command.Request.decode!(payload)
         case state.cb_module.handle_message(req, state.cb_state) do
           {:reply, reply_to, template, reply, cb_state} ->
@@ -241,7 +240,7 @@ defmodule Spanner.GenCommand do
             new_state = %{state | cb_state: cb_state}
             {:noreply, new_state}
         end
-      {:error, _} ->
+      false ->
         Logger.error("Message signature not verified! #{inspect message}")
         {:noreply, state}
     end
