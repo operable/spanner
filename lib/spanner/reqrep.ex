@@ -22,16 +22,6 @@ defmodule Spanner.RequestResponse do
     end
   end
 
-  def decode(key, struct, json) when is_binary(json) do
-    case Poison.decode(json) do
-      {:ok, obj} when is_map(obj) ->
-        decode(key, struct, obj)
-      {:ok, json} ->
-        {:error, {:wrong_json_type, json}}
-      error ->
-        error
-    end
-  end
   def decode(key, struct, obj) when is_map(obj) do
     case Map.has_key?(obj, Atom.to_string(key)) do
       false ->
