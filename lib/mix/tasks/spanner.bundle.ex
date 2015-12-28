@@ -126,7 +126,7 @@ defmodule Mix.Tasks.Spanner.Bundle do
   Return a list of atoms naming all the dependencies that need to be
   packaged up in this bundle.
 
-  We currently do not include the `loop` dependency (or anything that
+  We currently do not include the `spanner` dependency (or anything that
   is an exclusive dependency of it), as that code will already be on
   the Spanner server the bundle gets installed on.
 
@@ -136,7 +136,7 @@ defmodule Mix.Tasks.Spanner.Bundle do
 
     all_deps
     |> Enum.filter(&top_level?/1)
-    |> Enum.reject(dep_named(:loop))
+    |> Enum.reject(dep_named(:spanner))
     |> find_keepers(all_deps)
     |> Enum.map(&dep_name/1)
   end
