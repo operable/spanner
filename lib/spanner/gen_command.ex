@@ -189,38 +189,46 @@ defmodule Spanner.GenCommand do
   """
   @spec init(Keyword.t) :: {:ok, Spanner.GenCommand.state} | {:error, term()}
   def init([module: module, args: args]) do
+    # Trap exits for if / when the message bus connection dies; see
+    # handle_info/2 for more
+    :erlang.process_flag(:trap_exit, true)
+
     # Establish a connection to the message bus and subscribe to
     # the appropriate topics
-    {:ok, conn} = Carrier.Messaging.Connection.connect
+    case Carrier.Messaging.Connection.connect do
+      {:ok, conn} ->
+        {:ok, %Carrier.Credentials{id: relay_id}} = Carrier.CredentialManager.get()
+        [topic, reply_topic] = topics = [get_topic(module, relay_id), get_reply_topic(module, relay_id)]
+        for topic <- topics do
+          Logger.debug("#{inspect module}: Command subscribing to #{topic}")
+          Carrier.Messaging.Connection.subscribe(conn, topic)
+        end
 
-    {:ok, %Carrier.Credentials{id: relay_id}} = Carrier.CredentialManager.get()
-    [topic, reply_topic] = topics = [get_topic(module, relay_id), get_reply_topic(module, relay_id)]
-    for topic <- topics do
-      Logger.debug("#{inspect module}: Command subscribing to #{topic}")
-      Carrier.Messaging.Connection.subscribe(conn, topic)
-    end
+        # NOTICE: we are currently sharing the message queue connection
+        # between the GenCommand process and the ServiceProxy
+        # process. This is OK for our current uses (MQTT provided by
+        # emqttd) because the connection is itself just a PID. If in the
+        # future we were to change message buses or MQTT providers and the
+        # resulting connection were to be more complex (carrying around
+        # extra state, for example), we'd likely need to have separate
+        # connections.
 
-    # NOTICE: we are currently sharing the message queue connection
-    # between the GenCommand process and the ServiceProxy
-    # process. This is OK for our current uses (MQTT provided by
-    # emqttd) because the connection is itself just a PID. If in the
-    # future we were to change message buses or MQTT providers and the
-    # resulting connection were to be more complex (carrying around
-    # extra state, for example), we'd likely need to have separate
-    # connections.
+        # Note, the reply topic is only used in the service proxy
+        service_proxy = Spanner.ServiceProxy.new(conn, reply_topic)
 
-    # Note, the reply topic is only used in the service proxy
-    service_proxy = Spanner.ServiceProxy.new(conn, reply_topic)
-
-    case module.init(args, service_proxy) do
-      {:ok, state} ->
-        {:ok, %__MODULE__{mq_conn: conn,
-                          cb_module: module,
-                          cb_state: state,
-                          topic: topic}}
+        case module.init(args, service_proxy) do
+          {:ok, state} ->
+            {:ok, %__MODULE__{mq_conn: conn,
+                              cb_module: module,
+                              cb_state: state,
+                              topic: topic}}
+          {:error, reason} = error ->
+            Logger.error("#{inspect module}: Command initialization failed: #{inspect reason}")
+            {:stop, error}
+        end
       {:error, reason} = error ->
-        Logger.error("#{inspect module}: Command initialization failed: #{inspect reason}")
-        error
+        Logger.error("Command initialization failed: #{inspect reason}")
+        {:stop, error}
     end
   end
 
@@ -244,6 +252,14 @@ defmodule Spanner.GenCommand do
         Logger.error("Message signature not verified! #{inspect message}")
         {:noreply, state}
     end
+  end
+  def handle_info({:EXIT, conn, {:shutdown, reason}}, %__MODULE__{mq_conn: conn}=state) do
+    Logger.error("Message bus connection died: #{inspect reason}")
+    # Sleep a bit to make supervisor-initiated restarts have some
+    # meaningful effect in the face of network hiccups; otherwise,
+    # we'd burn through all of them too fast.
+    :timer.sleep(2000) # milliseconds
+    {:stop, :shutdown, state}
   end
   def handle_info(_, state),
     do: {:noreply, state}
