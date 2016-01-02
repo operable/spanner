@@ -20,11 +20,11 @@ defmodule Spanner.ServiceProxy do
   """
   @spec new(Carrier.Messaging.Connection.connection(), String.t) :: pid()
   def new(mq_conn, reply_topic) do
-    Logger.info("#{inspect __MODULE__}: Starting agent")
+    Logger.debug("Starting agent")
     {:ok, agent} = Agent.start_link(fn ->
       %{mq_conn: mq_conn, reply_topic: reply_topic}
     end)
-    Logger.info("#{inspect __MODULE__}: Agent #{inspect agent} started")
+    Logger.debug("Agent #{inspect agent} started")
     agent
   end
 
