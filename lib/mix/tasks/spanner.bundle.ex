@@ -97,8 +97,9 @@ defmodule Mix.Tasks.Spanner.Bundle do
       File.cp!("config.json", Path.join(work_dir, "config.json"))
     else
       modules = beams_to_modules(work_dir)
+      templates = relative_template_paths(work_dir)
 
-      json = Spanner.Bundle.Config.gen_config(name, modules)
+      json = Spanner.Bundle.Config.gen_config(name, modules, templates)
       |> Poison.encode_to_iodata!
 
       path = Path.join(work_dir, "config.json")
@@ -112,6 +113,12 @@ defmodule Mix.Tasks.Spanner.Bundle do
     Path.wildcard("#{work_dir}/ebin/*.beam")
     |> Enum.map(&String.to_char_list/1)
     |> Enum.map(&Keyword.fetch!(:beam_lib.info(&1), :module))
+  end
+
+  defp relative_template_paths(work_dir) do
+    paths = Path.wildcard("#{work_dir}/templates/*/*.mustache")
+    for path <- paths,
+      do: Path.relative_to(path, work_dir)
   end
 
   @doc """

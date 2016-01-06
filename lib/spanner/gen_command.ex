@@ -233,14 +233,15 @@ defmodule Spanner.GenCommand do
   end
 
   def handle_info({:publish, topic, message},
-                  %__MODULE__{topic: topic}=state) do
+                  %__MODULE__{topic: topic, cb_module: cb_module}=state) do
     case Carrier.CredentialManager.verify_signed_message(message) do
       {true, payload} ->
         req = Command.Request.decode!(payload)
-        case state.cb_module.handle_message(req, state.cb_state) do
+        case cb_module.handle_message(req, state.cb_state) do
           {:reply, reply_to, template, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
-            {:noreply, send_ok_reply(reply, template, reply_to, new_state)}
+            bundle = cb_module.bundle_name()
+            {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
           {:reply, reply_to, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
             {:noreply, send_ok_reply(reply, reply_to, new_state)}
@@ -266,8 +267,8 @@ defmodule Spanner.GenCommand do
 
   ########################################################################
 
-  defp send_ok_reply(reply, template, reply_to, state) when is_map(reply) or is_list(reply) do
-    resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply, template: template})
+  defp send_ok_reply(reply, {bundle, template}, reply_to, state) when is_map(reply) or is_list(reply) do
+    resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply, bundle: bundle, template: template})
     Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
     state
   end
