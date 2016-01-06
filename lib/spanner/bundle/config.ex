@@ -100,14 +100,15 @@ defmodule Spanner.Bundle.Config do
   - `modules`: a list of modules to be included in the bundle
 
   """
-  def gen_config(name, modules) do
+  def gen_config(name, modules, templates) do
     # We create single key/value pair maps for each
     # top-level key in the overall configuration, and then merge all
     # those maps together.
     Enum.reduce([gen_bundle(name),
                  gen_commands(modules),
                  gen_permissions(name, modules),
-                 gen_rules(modules)],
+                 gen_rules(modules),
+                 gen_templates(templates)],
                 &Map.merge/2)
   end
 
@@ -141,6 +142,19 @@ defmodule Spanner.Bundle.Config do
     |> Enum.sort
 
     %{"rules" => rules}
+  end
+
+  defp gen_templates(templates) do
+    templates = for path <- templates do
+      ["templates", adapter, file] = Path.split(path)
+      name = Path.basename(file, ".mustache")
+
+      %{"path" => path,
+        "name" => name,
+        "adapter" => adapter}
+    end
+
+    %{"templates" => templates}
   end
 
   # Extract all commands from `modules` and generate configuration
