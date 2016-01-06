@@ -5,7 +5,7 @@ defmodule Spanner.Command.Request do
 end
 
 defmodule Spanner.Command.Response do
-  defstruct [:room, :status, :status_message, :body, :template]
+  defstruct [:room, :status, :status_message, :body, :bundle, :template]
 
   use Spanner.Response
 end
