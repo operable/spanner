@@ -39,7 +39,7 @@ defmodule Spanner.Bundle.Config.Test do
     config = Config.gen_config("testing", [CommandWithoutOptions,
                                            CommandWithOptions,
                                            PrimitiveCommand,
-                                           NeitherCommandNorService])
+                                           NeitherCommandNorService], [])
     assert %{"bundle" => %{"name" => "testing"},
              "commands" => [%{"name" => "command-without-options",
                               "documentation" => nil,
@@ -66,16 +66,18 @@ defmodule Spanner.Bundle.Config.Test do
                "when command is testing:command-with-options must have testing:bar",
                "when command is testing:command-with-options with arg[0] == 'baz' must have testing:baz",
                "when command is testing:command-without-options must have testing:foo"
-             ]} == config
+             ],
+             "templates" => []} == config
   end
 
   # TODO: Should this be allowed?
   test "creates a config when there are no commands, services, permissions, or rules" do
-    config = Config.gen_config("testing", [NeitherCommandNorService])
+    config = Config.gen_config("testing", [NeitherCommandNorService], [])
     assert %{"bundle" => %{"name" => "testing"},
              "commands" => [],
              "permissions" => [],
-             "rules" => []} == config
+             "rules" => [],
+             "templates" => []} == config
   end
 
   @config %{"commands" => [%{"module" => "Elixir.AWS.Commands.Describe"},
@@ -88,4 +90,19 @@ defmodule Spanner.Bundle.Config.Test do
     ] = Config.commands(@config)
   end
 
+  test "includes templates in the config" do
+    config = Config.gen_config("testing", [], ["templates/slack/foo.mustache",
+                                               "templates/slack/bar.mustache",
+                                               "templates/hipchat/foo.mustache"])
+
+    assert %{"templates" => [%{"name" => "foo",
+                               "adapter" => "slack",
+                               "path" => "templates/slack/foo.mustache"},
+                             %{"name" => "bar",
+                               "adapter" => "slack",
+                               "path" => "templates/slack/bar.mustache"},
+                             %{"name" => "foo",
+                               "adapter" => "hipchat",
+                               "path" => "templates/hipchat/foo.mustache"}]} = config
+  end
 end
