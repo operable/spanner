@@ -133,11 +133,15 @@ defmodule Mix.Tasks.Spanner.Bundle do
   """
   def deps_to_package do
     all_deps = Mix.Dep.loaded(env: Mix.env)
-
     all_deps
     |> Enum.filter(&top_level?/1)
-    |> Enum.reject(dep_named(:loop))
-    |> find_keepers(all_deps)
+    # These deps are provided at runtime by the hosting
+    # Relay process since it also depends on Spanner. Since we can
+    # count on their presence we remove them from the list of apps
+    # to be packaged by this bundle.
+    |> Enum.reject(dep_named(find_related([%Mix.Dep{app: :spanner}],
+                                          all_deps)))
+    |> find_related(all_deps)
     |> Enum.map(&dep_name/1)
   end
 
@@ -151,9 +155,13 @@ defmodule Mix.Tasks.Spanner.Bundle do
 
   @doc """
   Returns a function that can be used to indicate whether a dependency
-  is for a specific named application. Useful for filtering
-  collections.
+  or list of dependencies is for a specific named application. Useful for
+  filtering collections.
   """
+  def dep_named(apps) when is_list(apps) do
+    names = Enum.map(apps, &(&1.app))
+    fn(dep) -> dep_name(dep) in names end
+  end
   def dep_named(app),
     do: fn(dep) -> dep_name(dep) == app end
 
@@ -174,33 +182,33 @@ defmodule Mix.Tasks.Spanner.Bundle do
   dependency list to ensure we capture all the dependencies in our
   final list of "keepers".
   """
-  def find_keepers(target_deps, all_deps),
-    do: find_keepers(target_deps, all_deps, [])
+  def find_related(target_deps, all_deps),
+    do: find_related(target_deps, all_deps, [])
 
-  def find_keepers([], _all_deps, keep),
+  def find_related([], _all_deps, keep),
     do: keep
-  def find_keepers([current_dep|rest], all_deps, keep) do
+  def find_related([current_dep|rest], all_deps, keep) do
     # Find the complete dependency information in the global list
     %Mix.Dep{deps: deps} = complete_dep = resolve_complete_dep_info(current_dep, all_deps)
     case Enum.member?(keep, complete_dep) do
       true ->
         # We've already encountered this dependency before (e.g., two
         # dependencies share a common dependency); move along
-        find_keepers(rest, all_deps, keep)
+        find_related(rest, all_deps, keep)
       false ->
         # We've never seen this dependency before; let's process it!
         case deps do
           [] ->
             # There are no dependencies; add the complete current
             # dependency to the list of keepers and continue.
-            find_keepers(rest, all_deps, [complete_dep | keep])
+            find_related(rest, all_deps, [complete_dep | keep])
           _ ->
             # The current dependency has dependencies of its own. Recur on
             # each of those, accumulating more dependencies to keep.
-            updated_keep = find_keepers(deps, all_deps, keep)
+            updated_keep = find_related(deps, all_deps, keep)
             # Add the complete current dependency to the updated list of
             # keepers and continue.
-            find_keepers(rest, all_deps, [complete_dep | updated_keep])
+            find_related(rest, all_deps, [complete_dep | updated_keep])
         end
     end
   end
