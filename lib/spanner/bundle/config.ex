@@ -100,7 +100,7 @@ defmodule Spanner.Bundle.Config do
   - `modules`: a list of modules to be included in the bundle
 
   """
-  def gen_config(name, modules, templates) do
+  def gen_config(name, modules, work_dir) do
     # We create single key/value pair maps for each
     # top-level key in the overall configuration, and then merge all
     # those maps together.
@@ -108,7 +108,7 @@ defmodule Spanner.Bundle.Config do
                  gen_commands(modules),
                  gen_permissions(name, modules),
                  gen_rules(modules),
-                 gen_templates(templates)],
+                 gen_templates(work_dir)],
                 &Map.merge/2)
   end
 
@@ -144,14 +144,19 @@ defmodule Spanner.Bundle.Config do
     %{"rules" => rules}
   end
 
-  defp gen_templates(templates) do
-    templates = for path <- templates do
-      ["templates", adapter, file] = Path.split(path)
-      name = Path.basename(file, ".mustache")
+  defp gen_templates(work_dir) do
+    paths = Path.wildcard("#{work_dir}/templates/*/*.mustache")
 
-      %{"path" => path,
+    templates = for path <- paths do
+      relative_path = Path.relative_to(path, work_dir)
+      ["templates", adapter, file] = Path.split(relative_path)
+      name = Path.basename(file, ".mustache")
+      source = File.read!(path)
+
+      %{"adapter" => adapter,
         "name" => name,
-        "adapter" => adapter}
+        "path" => relative_path,
+        "source" => source}
     end
 
     %{"templates" => templates}

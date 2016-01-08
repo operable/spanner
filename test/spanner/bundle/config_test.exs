@@ -39,7 +39,7 @@ defmodule Spanner.Bundle.Config.Test do
     config = Config.gen_config("testing", [CommandWithoutOptions,
                                            CommandWithOptions,
                                            PrimitiveCommand,
-                                           NeitherCommandNorService], [])
+                                           NeitherCommandNorService], ".")
     assert %{"bundle" => %{"name" => "testing"},
              "commands" => [%{"name" => "command-without-options",
                               "documentation" => nil,
@@ -72,7 +72,7 @@ defmodule Spanner.Bundle.Config.Test do
 
   # TODO: Should this be allowed?
   test "creates a config when there are no commands, services, permissions, or rules" do
-    config = Config.gen_config("testing", [NeitherCommandNorService], [])
+    config = Config.gen_config("testing", [NeitherCommandNorService], ".")
     assert %{"bundle" => %{"name" => "testing"},
              "commands" => [],
              "permissions" => [],
@@ -91,18 +91,25 @@ defmodule Spanner.Bundle.Config.Test do
   end
 
   test "includes templates in the config" do
-    config = Config.gen_config("testing", [], ["templates/slack/foo.mustache",
-                                               "templates/slack/bar.mustache",
-                                               "templates/hipchat/foo.mustache"])
+    config = Config.gen_config("testing", [], "test/support/test-bundle")
 
-    assert %{"templates" => [%{"name" => "foo",
-                               "adapter" => "slack",
-                               "path" => "templates/slack/foo.mustache"},
-                             %{"name" => "bar",
-                               "adapter" => "slack",
-                               "path" => "templates/slack/bar.mustache"},
-                             %{"name" => "foo",
-                               "adapter" => "hipchat",
-                               "path" => "templates/hipchat/foo.mustache"}]} = config
+    assert %{"templates" => [%{"adapter" => "hipchat",
+                               "name" => "help",
+                               "path" => "templates/hipchat/help.mustache",
+                               "source" => """
+                               {{#command}}
+                                 Documentation for <pre>{{command}}</pre>
+                                 {{{documentation}}}
+                               {{/command}}
+                               """},
+                             %{"adapter" => "slack",
+                               "name" => "help",
+                               "path" => "templates/slack/help.mustache",
+                               "source" => """
+                               {{#command}}
+                                 Documentation for `{{command}}`
+                                 {{{documentation}}}
+                               {{/command}}
+                               """}]} = config
   end
 end
