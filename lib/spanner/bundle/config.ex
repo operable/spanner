@@ -172,10 +172,11 @@ defmodule Spanner.Bundle.Config do
     do: Enum.filter(modules, &GenCommand.is_command?/1)
 
   defp command_map(module) do
-    %{"name" => module.command_name(),
-      "enforcing" => module.enforcing?(),
-      "version" => version(module),
-      "options" => module.options,
+    modattrs = module.module_info(:attributes)
+    %{"name" => fetch_attribute!(modattrs, :command_name),
+      "enforcing" => fetch_attribute!(modattrs, :enforcing),
+      "version" => get_attribute(modattrs, :command_version, "0.0.1"),
+      "options" => Keyword.get(modattrs, :options, []),
       "documentation" => case Code.get_docs(module, :moduledoc) do
                            {_line, doc} ->
                              # If a module doesn't have a module doc,
@@ -192,9 +193,24 @@ defmodule Spanner.Bundle.Config do
         "module" => inspect(module)}
   end
 
-  defp version(module) do
-    version = "0.0.1"
-    Logger.warn("#{inspect __MODULE__}: Using hard-coded version of `#{version}` for command `#{inspect module}`!")
-    version
+  defp get_attribute(modattrs, key, default) do
+    case Keyword.get(modattrs, key, default) do
+      ^default ->
+        default
+      [value] ->
+        value
+      values ->
+        values
+    end
   end
+
+  defp fetch_attribute!(modattrs, key) do
+    case Keyword.fetch!(modattrs, key) do
+      [value] ->
+        value
+      values ->
+        values
+    end
+  end
+
 end

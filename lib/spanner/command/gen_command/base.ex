@@ -154,23 +154,22 @@ defmodule Spanner.GenCommand.Base do
 
       require Spanner.GenCommand.ValidationError
 
-      Module.register_attribute(__MODULE__, :command_name, accumulate: false, persist: false)
+      Module.register_attribute(__MODULE__, :command_name, accumulate: false, persist: true)
+      Module.register_attribute(__MODULE__, :bundle_name, accumulate: false, persist: true)
       Module.register_attribute(__MODULE__, :options, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :permissions, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :raw_rules, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :rules, accumulate: true, persist: true)
+      Module.register_attribute(__MODULE__, :enforcing, accumulate: false, persist: true)
 
       import unquote(__MODULE__), only: [option: 1,
                                          option: 2,
                                          permission: 1,
                                          rule: 1]
 
+      @bundle_name unquote(bundle_name)
       @command_name unquote(command_name)
-
-      # TODO: Ultimately this should take an argument, but that'll
-      # need to be addressed in the bundle supervisor as well
-      def start_link(),
-        do: Spanner.GenCommand.start_link(__MODULE__, [])
+      @enforcing unquote(enforcing?)
 
       def init(_args, _service_proxy),
         do: {:ok, []}
