@@ -1,5 +1,5 @@
 defmodule Spanner.Command.Request do
-  defstruct [:room, :requestor, :command, :args, :options, :reply_to]
+  defstruct [:room, :requestor, :command, :args, :options, :reply_to, :scope]
 
   use Spanner.Request
 end
