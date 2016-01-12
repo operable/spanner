@@ -101,11 +101,13 @@ defmodule Spanner.GenCommand do
   @typep state :: %__MODULE__{mq_conn: Carrier.Messaging.Connection.connection,
                               cb_module: module(),
                               cb_state: callback_state(),
+                              bundle: String.t,
+                              command: String.t,
                               topic: String.t}
-  defstruct [mq_conn: nil,
-             cb_module: nil,
-             cb_state: nil,
-             topic: nil]
+
+  defstruct [:mq_conn, :cb_module, :cb_state, :bundle,
+             :command, :topic]
+  @type init_args :: [] | [term()]
 
   @doc """
   Starts the command.
@@ -128,8 +130,10 @@ defmodule Spanner.GenCommand do
       end
 
   """
-  def start_link(module, args),
-    do: GenServer.start_link(__MODULE__, [module: module, args: args])
+  @spec start_link(String.t(), String.t(), module(), init_args()) :: {:ok, pid()} | {:error, term()}
+  def start_link(bundle, command, module, args),
+  do: GenServer.start_link(__MODULE__, [bundle: bundle, command: command,
+                                        module: module, args: args])
 
   @doc """
   Callback for the underlying `GenServer` implementation of
@@ -137,7 +141,7 @@ defmodule Spanner.GenCommand do
 
   """
   @spec init(Keyword.t) :: {:ok, Spanner.GenCommand.state} | {:error, term()}
-  def init([module: module, args: args]) do
+  def init([bundle: bundle, command: command, module: module, args: args]) do
     # Trap exits for if / when the message bus connection dies; see
     # handle_info/2 for more
     :erlang.process_flag(:trap_exit, true)
@@ -147,8 +151,9 @@ defmodule Spanner.GenCommand do
     case Carrier.Messaging.Connection.connect do
       {:ok, conn} ->
         {:ok, %Carrier.Credentials{id: relay_id}} = Carrier.CredentialManager.get()
-        [topic, reply_topic] = topics = [get_topic(module, relay_id), get_reply_topic(module, relay_id)]
-        for topic <- topics do
+        topic = "/bot/commands/#{relay_id}/#{bundle}/#{command}"
+        reply_topic = "#{topic}/reply"
+        for topic <- [topic, reply_topic] do
           Logger.debug("#{inspect module}: Command subscribing to #{topic}")
           Carrier.Messaging.Connection.subscribe(conn, topic)
         end
@@ -231,11 +236,5 @@ defmodule Spanner.GenCommand do
     do: send_ok_reply(%{body: [reply]}, reply_to, state)
 
   ########################################################################
-
-  defp get_topic(module, relay_id),
-    do: "/bot/commands/#{relay_id}/#{module.bundle_name()}/#{module.command_name()}"
-
-  defp get_reply_topic(module, relay_id),
-    do: "#{get_topic(module, relay_id)}/reply"
 
 end
