@@ -114,21 +114,11 @@ defmodule Spanner.GenCommand do
 
   ## Arguments
 
+  * `bundle`: the name of the command's enclosing bundle
+  * `command`: the name of the command itself
   * `module`: the module implementing the command
   * `args`: will be passed to `module.info/1` to generate callback
     state
-
-  ## Example
-
-      defmodule MyCommand do
-        ...
-
-        def start_link(),
-          do: Spanner.GenCommand.start_link(__MODULE__, [x,y,z])
-
-        ...
-      end
-
   """
   @spec start_link(String.t(), String.t(), module(), init_args()) :: {:ok, pid()} | {:error, term()}
   def start_link(bundle, command, module, args),
