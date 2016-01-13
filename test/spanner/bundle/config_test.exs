@@ -25,8 +25,8 @@ defmodule Spanner.Bundle.Config.Test do
     def handle_message(_,_), do: {:reply, "blah", "blah", :blah}
   end
 
-  defmodule PrimitiveCommand do
-    use GenCommand.Base, name: "primitive-command", primitive: true, bundle: "testing"
+  defmodule UnenforcedCommand do
+    use GenCommand.Base, name: "unenforced-command", enforcing: false, bundle: "testing"
 
     def handle_message(_,_), do: {:reply, "blah", "blah", "blah"}
   end
@@ -38,29 +38,29 @@ defmodule Spanner.Bundle.Config.Test do
   test "creates a config for a set of modules" do
     config = Config.gen_config("testing", [CommandWithoutOptions,
                                            CommandWithOptions,
-                                           PrimitiveCommand,
+                                           UnenforcedCommand,
                                            NeitherCommandNorService], ".")
     assert %{"bundle" => %{"name" => "testing"},
              "commands" => [%{"name" => "command-without-options",
                               "documentation" => nil,
                               "version" => "0.0.1",
-                              "primitive" => false,
+                              "enforcing" => true,
                               "options" => [],
                               "module" => "Spanner.Bundle.Config.Test.CommandWithoutOptions"},
                             %{"name" => "command-with-options",
                               "documentation" => nil,
                               "version" => "0.0.1",
-                              "primitive" => false,
+                              "enforcing" => true,
                               "options" => [%{"name" => "option_1",
                                               "type" => "bool",
                                               "required" => true}],
                               "module" => "Spanner.Bundle.Config.Test.CommandWithOptions"},
-                            %{"name" => "primitive-command",
+                            %{"name" => "unenforced-command",
                               "documentation" => nil,
                               "version" => "0.0.1",
-                              "primitive" => true,
+                              "enforcing" => false,
                               "options" => [],
-                              "module" => "Spanner.Bundle.Config.Test.PrimitiveCommand"}],
+                              "module" => "Spanner.Bundle.Config.Test.UnenforcedCommand"}],
              "permissions" => ["testing:bar", "testing:baz", "testing:foo"],
              "rules" => [
                "when command is testing:command-with-options must have testing:bar",
