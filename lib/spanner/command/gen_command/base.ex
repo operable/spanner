@@ -67,6 +67,35 @@ defmodule Spanner.GenCommand.Base do
         # ...
       end
 
+  ### Calling Convention
+
+  By default commands use the 'bound' calling convention. This means commands
+  only have access to variables that are explicitly passed to the command.
+
+  For example: '@cog stackoveflow vim | echo $title'
+  Echo is a bound command, it will only ever have access to the value held in '$title'.
+
+  If a command is unenforced, meaning the 'enforcing' option is set to false and
+  there are no permissions, you can set the calling convention to 'all'.
+  Commands using 'all' have access to a special key on the request called
+  'cog_env'. 'cog_env' contains the context that the command is currently being
+  executed under.
+
+  For example: '@cog stackoverflow vim | filter --matches="^Vim" --field="title"
+  Filter is of the 'all' calling convention and therefore has access to the entire
+  result map from stackoverflow.
+
+  'all' should be used sparingly. It can potentially cause some difficult to debug
+  errors if missused. It also makes it very difficult to lock down commands, hence
+  the limitation on commands that have no permissions.
+
+      defmodule MyCommand do
+        use #{inspect __MODULE__}, enforcing: false, calling_convention: :all
+
+        # ...
+
+      end
+
   ### Options
 
   All commands can specify options, using the `option/1` macro.
@@ -148,6 +177,7 @@ defmodule Spanner.GenCommand.Base do
     bundle_name = Keyword.fetch!(opts, :bundle)
     command_name = Keyword.get(opts, :name, default_name)
     enforcing? = Keyword.get(opts, :enforcing, true)
+    calling_convention = Keyword.get(opts, :calling_convention, :bound)
 
     quote location: :keep do
       @behaviour Spanner.GenCommand
@@ -183,6 +213,9 @@ defmodule Spanner.GenCommand.Base do
 
       def enforcing?(),
         do: unquote(enforcing?)
+
+      def calling_convention(),
+        do: unquote(calling_convention)
 
       defoverridable [init: 2]
 
