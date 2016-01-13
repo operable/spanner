@@ -47,21 +47,22 @@ defmodule Spanner.GenCommand.Base do
 
       This.Is.My.SuperSnazzyCommand.command_name() # => "super-command"
 
-  ### Primitive Commands
+  ### Enforced/Secure Commands
 
-  By default commands require permissions to run. Primitive commands require
-  no permissions. Primitive commands should be used sparingly and are most
+  By default commands enforced, meaning they require permissions to run.
+  Optionally users can opt-out and set 'enforcing' to false, requiring no
+  permissions to run. Un-enforced commands should be used sparingly and are most
   useful for commands that do simple text processing and never call out to
   outside services. `operable:echo` and `operable:table` are good examples of
-  primitive commands.
+  un-enforced commands.
 
-  Commands can be tagged as primitive by setting the `:primitive` option to
+  To opt-out set the enforcing flag to false when using the command macro.
   true when using #{inspect __MODULE__}
 
   Example:
 
       defmodule MyPrimitiveCommand do
-        use #{inspect __MODULE__}, primitive: true
+        use #{inspect __MODULE__}, enforcing: false
 
         # ...
       end
@@ -146,7 +147,7 @@ defmodule Spanner.GenCommand.Base do
 
     bundle_name = Keyword.fetch!(opts, :bundle)
     command_name = Keyword.get(opts, :name, default_name)
-    primitive? = Keyword.get(opts, :primitive, false)
+    enforcing? = Keyword.get(opts, :enforcing, true)
 
     quote location: :keep do
       @behaviour Spanner.GenCommand
@@ -180,8 +181,8 @@ defmodule Spanner.GenCommand.Base do
       def command_name(),
         do: unquote(command_name)
 
-      def primitive?(),
-        do: unquote(primitive?)
+      def enforcing?(),
+        do: unquote(enforcing?)
 
       defoverridable [init: 2]
 

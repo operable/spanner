@@ -112,7 +112,7 @@ defmodule Spanner.GenCommand do
   @doc """
   Indicates whether a command should skip permission checks or not.
   """
-  @callback primitive?() :: boolean()
+  @callback enforcing?() :: boolean()
 
   @doc """
   Returns `true` if `module` implements the
