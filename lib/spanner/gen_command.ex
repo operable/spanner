@@ -45,11 +45,6 @@ defmodule Spanner.GenCommand do
   @opaque service_proxy() :: pid()
 
   @doc """
-  Start a command in the context of a bundle supervision tree.
-  """
-  @callback start_link() :: pid()
-
-  @doc """
   Initializes the callback module's internal state.
 
   If your command is stateless and requires no interaction with
@@ -67,52 +62,6 @@ defmodule Spanner.GenCommand do
             :: {:reply, message_bus_topic(), command_response(), callback_state()} |
                {:reply, message_bus_topic(), template(), command_response(), callback_state()} |
                {:noreply, callback_state()}
-
-  @doc "The name by which the command is referred to."
-  @callback command_name() :: String.t
-
-  @doc "The name of the bundle of which the command is a member."
-  @callback bundle_name() :: String.t
-
-  @doc """
-  Return all the invocation rules defined for a given command.
-
-  ## Example
-
-      > MyCommand.rules
-      [
-        "when command is my-command must have bundle:admin",
-        "when command is my-command with arg[0] == 'foo' must have bundle:read"
-      ]
-
-  """
-  @callback rules() :: [String.t]
-
-  @doc """
-  Return the names of the permissions that the command depends on.
-  """
-  @callback permissions() :: [String.t]
-
-  @doc """
-  Return descriptors for all the options a command declares.
-
-  ## Example
-
-      > CommandWithMultipleOptions.options
-      [
-        %{name: "option_1", type: "string", required: true},
-        %{name: "option_2", type: "boolean", required: false},
-        %{name: "option_3", type: "string", required: false}
-      ]
-
-  """
-  @callback options() :: [map()]
-
-
-  @doc """
-  Indicates whether a command should skip permission checks or not.
-  """
-  @callback enforcing?() :: boolean()
 
   @doc """
   Returns `true` if `module` implements the
@@ -152,35 +101,29 @@ defmodule Spanner.GenCommand do
   @typep state :: %__MODULE__{mq_conn: Carrier.Messaging.Connection.connection,
                               cb_module: module(),
                               cb_state: callback_state(),
+                              bundle: String.t,
+                              command: String.t,
                               topic: String.t}
-  defstruct [mq_conn: nil,
-             cb_module: nil,
-             cb_state: nil,
-             topic: nil]
+
+  defstruct [:mq_conn, :cb_module, :cb_state, :bundle,
+             :command, :topic]
+  @type init_args :: [] | [term()]
 
   @doc """
   Starts the command.
 
   ## Arguments
 
+  * `bundle`: the name of the command's enclosing bundle
+  * `command`: the name of the command itself
   * `module`: the module implementing the command
   * `args`: will be passed to `module.info/1` to generate callback
     state
-
-  ## Example
-
-      defmodule MyCommand do
-        ...
-
-        def start_link(),
-          do: Spanner.GenCommand.start_link(__MODULE__, [x,y,z])
-
-        ...
-      end
-
   """
-  def start_link(module, args),
-    do: GenServer.start_link(__MODULE__, [module: module, args: args])
+  @spec start_link(String.t(), String.t(), module(), init_args()) :: {:ok, pid()} | {:error, term()}
+  def start_link(bundle, command, module, args),
+  do: GenServer.start_link(__MODULE__, [bundle: bundle, command: command,
+                                        module: module, args: args])
 
   @doc """
   Callback for the underlying `GenServer` implementation of
@@ -188,7 +131,7 @@ defmodule Spanner.GenCommand do
 
   """
   @spec init(Keyword.t) :: {:ok, Spanner.GenCommand.state} | {:error, term()}
-  def init([module: module, args: args]) do
+  def init([bundle: bundle, command: command, module: module, args: args]) do
     # Trap exits for if / when the message bus connection dies; see
     # handle_info/2 for more
     :erlang.process_flag(:trap_exit, true)
@@ -198,8 +141,9 @@ defmodule Spanner.GenCommand do
     case Carrier.Messaging.Connection.connect do
       {:ok, conn} ->
         {:ok, %Carrier.Credentials{id: relay_id}} = Carrier.CredentialManager.get()
-        [topic, reply_topic] = topics = [get_topic(module, relay_id), get_reply_topic(module, relay_id)]
-        for topic <- topics do
+        topic = "/bot/commands/#{relay_id}/#{bundle}/#{command}"
+        reply_topic = "#{topic}/reply"
+        for topic <- [topic, reply_topic] do
           Logger.debug("#{inspect module}: Command subscribing to #{topic}")
           Carrier.Messaging.Connection.subscribe(conn, topic)
         end
@@ -282,11 +226,5 @@ defmodule Spanner.GenCommand do
     do: send_ok_reply(%{body: [reply]}, reply_to, state)
 
   ########################################################################
-
-  defp get_topic(module, relay_id),
-    do: "/bot/commands/#{relay_id}/#{module.bundle_name()}/#{module.command_name()}"
-
-  defp get_reply_topic(module, relay_id),
-    do: "#{get_topic(module, relay_id)}/reply"
 
 end

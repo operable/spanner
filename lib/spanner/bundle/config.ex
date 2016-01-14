@@ -122,7 +122,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_permissions(bundle_name, modules) do
     permissions = modules
     |> only_commands
-    |> Enum.map(&(&1.permissions))
+    |> Enum.map(&(get_attribute(&1, :permissions, [])))
     |> Enum.map(&Enum.into(&1, HashSet.new))
     |> Enum.reduce(HashSet.new, &Set.union/2)
     |> Enum.map(&namespace_permission(bundle_name, &1))
@@ -138,7 +138,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_rules(modules) do
     rules = modules
     |> only_commands
-    |> Enum.flat_map(&(&1.rules))
+    |> Enum.flat_map(&(get_attribute(&1, :rules, [])))
     |> Enum.sort
 
     %{"rules" => rules}
@@ -172,10 +172,11 @@ defmodule Spanner.Bundle.Config do
     do: Enum.filter(modules, &GenCommand.is_command?/1)
 
   defp command_map(module) do
-    %{"name" => module.command_name(),
-      "enforcing" => module.enforcing?(),
-      "version" => version(module),
-      "options" => module.options,
+    modattrs = module.module_info(:attributes)
+    %{"name" => fetch_attribute!(modattrs, :command_name),
+      "enforcing" => fetch_attribute!(modattrs, :enforcing),
+      "version" => get_attribute(modattrs, :command_version, "0.0.1"),
+      "options" => Keyword.get(modattrs, :options, []),
       "documentation" => case Code.get_docs(module, :moduledoc) do
                            {_line, doc} ->
                              # If a module doesn't have a module doc,
@@ -192,9 +193,31 @@ defmodule Spanner.Bundle.Config do
         "module" => inspect(module)}
   end
 
-  defp version(module) do
-    version = "0.0.1"
-    Logger.warn("#{inspect __MODULE__}: Using hard-coded version of `#{version}` for command `#{inspect module}`!")
-    version
+  defp get_attribute(module, key, default) when is_atom(module) do
+    get_attribute(module.module_info(:attributes), key, default)
   end
+  defp get_attribute(modattrs, key, default) do
+    case Keyword.get_values(modattrs, key) do
+      [] ->
+        default
+      values ->
+        ensure_proper_return(key, values)
+    end
+  end
+
+  defp fetch_attribute!(modattrs, key) do
+    value = Keyword.fetch!(modattrs, key)
+    ensure_proper_return(key, value)
+  end
+
+  defp ensure_proper_return(key, [value]) when key in [:command_name, :enforcing, :version] do
+    value
+  end
+  defp ensure_proper_return(key, values) when key in [:permissions, :rules] do
+    :lists.flatten(values)
+  end
+  defp ensure_proper_return(_, value) do
+    value
+  end
+
 end

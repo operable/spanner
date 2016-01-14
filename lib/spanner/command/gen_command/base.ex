@@ -154,23 +154,22 @@ defmodule Spanner.GenCommand.Base do
 
       require Spanner.GenCommand.ValidationError
 
-      Module.register_attribute(__MODULE__, :command_name, accumulate: false, persist: false)
+      Module.register_attribute(__MODULE__, :command_name, accumulate: false, persist: true)
+      Module.register_attribute(__MODULE__, :bundle_name, accumulate: false, persist: true)
       Module.register_attribute(__MODULE__, :options, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :permissions, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :raw_rules, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :rules, accumulate: true, persist: true)
+      Module.register_attribute(__MODULE__, :enforcing, accumulate: false, persist: true)
 
       import unquote(__MODULE__), only: [option: 1,
                                          option: 2,
                                          permission: 1,
                                          rule: 1]
 
+      @bundle_name unquote(bundle_name)
       @command_name unquote(command_name)
-
-      # TODO: Ultimately this should take an argument, but that'll
-      # need to be addressed in the bundle supervisor as well
-      def start_link(),
-        do: Spanner.GenCommand.start_link(__MODULE__, [])
+      @enforcing unquote(enforcing?)
 
       def init(_args, _service_proxy),
         do: {:ok, []}
@@ -194,8 +193,7 @@ defmodule Spanner.GenCommand.Base do
   Declare an option that this command takes.
 
   This macro may be invoked multiple times, in which case all values
-  are accumulated. They may be read back at runtime using
-  `#{inspect __MODULE__}.options/1`.
+  are accumulated.
 
   This metadata is used to automatically generate bundle
   configurations.
@@ -245,10 +243,10 @@ defmodule Spanner.GenCommand.Base do
 
   """
   defmacro permission(name) when is_binary(name) do
+    if String.contains?(name, ":") do
+      raise Spanner.GenCommand.ValidationError.new("Please specify permissions without the bundle namespace: `#{name}`")
+    end
     quote location: :keep, bind_quoted: [name: name] do
-      if String.contains?(name, ":") do
-        raise Spanner.GenCommand.ValidationError.new("Please specify permissions without the bundle namespace: `#{name}`")
-      end
       @permissions name
     end
   end
@@ -264,8 +262,7 @@ defmodule Spanner.GenCommand.Base do
   Declare an invocation rule for this command.
 
   This macro may be invoked multiple times, in which case all values
-  are accumulated. They may be read back at runtime using
-  `#{inspect __MODULE__}.rules/1`.
+  are accumulated.
 
   This metadata is used to automatically generate bundle
   configurations.
