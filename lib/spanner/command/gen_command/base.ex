@@ -214,8 +214,14 @@ defmodule Spanner.GenCommand.Base do
       def enforcing?(),
         do: unquote(enforcing?)
 
-      def calling_convention(),
-        do: unquote(calling_convention)
+      def calling_convention() do
+        case unquote(calling_convention) do
+          conv when is_atom(conv) ->
+            Atom.to_string(conv)
+          conv when is_binary(conv) ->
+            conv
+        end
+      end
 
       defoverridable [init: 2]
 
