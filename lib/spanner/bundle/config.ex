@@ -122,7 +122,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_permissions(bundle_name, modules) do
     permissions = modules
     |> only_commands
-    |> Enum.map(&(&1.permissions))
+    |> Enum.map(&(get_attribute(&1, :permissions, [])))
     |> Enum.map(&Enum.into(&1, HashSet.new))
     |> Enum.reduce(HashSet.new, &Set.union/2)
     |> Enum.map(&namespace_permission(bundle_name, &1))
@@ -138,7 +138,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_rules(modules) do
     rules = modules
     |> only_commands
-    |> Enum.flat_map(&(&1.rules))
+    |> Enum.flat_map(&(get_attribute(&1, :rules, [])))
     |> Enum.sort
 
     %{"rules" => rules}
@@ -193,6 +193,9 @@ defmodule Spanner.Bundle.Config do
         "module" => inspect(module)}
   end
 
+  defp get_attribute(module, key, default) when is_atom(module) do
+    get_attribute(module.module_info(:attributes), key, default)
+  end
   defp get_attribute(modattrs, key, default) do
     case Keyword.get(modattrs, key, default) do
       ^default ->
