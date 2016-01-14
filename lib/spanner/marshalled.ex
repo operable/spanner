@@ -1,13 +1,5 @@
-defmodule Spanner.DecodeError do
+defmodule Spanner.EncodingError do
   defexception [:message, :json]
-
-  def key_error(:request) do
-    :missing_request_key
-  end
-  def key_error(:response) do
-    :missing_response_key
-  end
-
 end
 
 defmodule Spanner.Marshalled do
@@ -37,18 +29,28 @@ defmodule Spanner.Marshalled do
 
   defp gen_encoder do
     quote do
-      def encode(%__MODULE__{}=data) do
-        Map.from_struct(data)
+      def encode!(%__MODULE__{}=data) do
+        case Map.from_struct(data) do
+          {:error, reason} ->
+            raise Spanner.EncodingError, [message: inspect(reason), json: inspect(data)]
+          m ->
+            m
+        end
       end
     end
   end
   defp gen_decoder(false) do
     quote do
       def decode!(data) do
-        Enum.reduce(@field_mappings, %__MODULE__{},
-          fn({dname, sname}, accum) ->
-            Map.put(accum, sname, Map.get(data, dname))
-          end)
+        case Enum.reduce(@field_mappings, %__MODULE__{},
+              fn({dname, sname}, accum) ->
+                Map.put(accum, sname, Map.get(data, dname))
+              end) do
+          {:error, reason} ->
+            raise Spanner.EncodingError, [message: inspect(reason), json: inspect(data)]
+          populated ->
+            populated
+        end
       end
     end
   end
@@ -61,11 +63,11 @@ defmodule Spanner.Marshalled do
           end)
         case validate(populated) do
           {:ok, populated} ->
-            {:ok, populated}
+            populated
           {:error, {:empty_field, field}} ->
-            raise Spanner.DecodeError, [message: "#{__MODULE__}.#{field} is empty", json: data]
+            raise Spanner.EncodingError, [message: "#{__MODULE__}.#{field} is empty", json: data]
           {:error, reason} ->
-            raise Spanner.DecodeError, [message: inspect(reason), json: data]
+            raise Spanner.EncodingError, [message: inspect(reason), json: data]
         end
       end
     end
