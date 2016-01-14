@@ -6,6 +6,6 @@
   "getopt": {:git, "https://github.com/jcomellas/getopt.git", "626698975e63866156159661d100785d65eab6f9", [branch: "master"]},
   "goldrush": {:git, "git://github.com/DeadZen/goldrush.git", "64864ba7fcf40988361340e48680b49a2c2938cf", [tag: "0.1.7"]},
   "lager": {:git, "git://github.com/basho/lager.git", "310ed140ab86b95dd9f1f1ed3bf2ca93f841349d", [branch: "master"]},
-  "piper": {:git, "git@github.com:operable/piper", "91495c22904a15c5bacbbd0a2bed743e76da967e", [ref: "01a5ff07e9d24b712c5fa71736940ac9b69d1ef8"]},
+  "piper": {:git, "git@github.com:operable/piper", "888d9df3eeeb16954bf0e68c9083a28baf6c92d5", [ref: "888d9df3eeeb16954bf0e68c9083a28baf6c92d5"]},
   "poison": {:hex, :poison, "1.5.0"},
   "uuid": {:hex, :uuid, "1.0.1"}}
