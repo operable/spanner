@@ -27,13 +27,4 @@ defmodule Spanner.Command.Response do
 
   defmarshalled [:room, :status, :status_message, :body, :bundle, :template]
 
-  def validate(response) do
-    cond do
-      response.room == nil ->
-        {:error, {:empty_field, :room}}
-      true ->
-        {:ok, response}
-    end
-  end
-
 end
