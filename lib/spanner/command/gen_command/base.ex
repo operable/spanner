@@ -193,8 +193,7 @@ defmodule Spanner.GenCommand.Base do
   Declare an option that this command takes.
 
   This macro may be invoked multiple times, in which case all values
-  are accumulated. They may be read back at runtime using
-  `#{inspect __MODULE__}.options/1`.
+  are accumulated.
 
   This metadata is used to automatically generate bundle
   configurations.
@@ -244,10 +243,10 @@ defmodule Spanner.GenCommand.Base do
 
   """
   defmacro permission(name) when is_binary(name) do
+    if String.contains?(name, ":") do
+      raise Spanner.GenCommand.ValidationError.new("Please specify permissions without the bundle namespace: `#{name}`")
+    end
     quote location: :keep, bind_quoted: [name: name] do
-      if String.contains?(name, ":") do
-        raise Spanner.GenCommand.ValidationError.new("Please specify permissions without the bundle namespace: `#{name}`")
-      end
       @permissions name
     end
   end
@@ -263,8 +262,7 @@ defmodule Spanner.GenCommand.Base do
   Declare an invocation rule for this command.
 
   This macro may be invoked multiple times, in which case all values
-  are accumulated. They may be read back at runtime using
-  `#{inspect __MODULE__}.rules/1`.
+  are accumulated.
 
   This metadata is used to automatically generate bundle
   configurations.

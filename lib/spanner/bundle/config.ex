@@ -197,23 +197,27 @@ defmodule Spanner.Bundle.Config do
     get_attribute(module.module_info(:attributes), key, default)
   end
   defp get_attribute(modattrs, key, default) do
-    case Keyword.get(modattrs, key, default) do
-      ^default ->
+    case Keyword.get_values(modattrs, key) do
+      [] ->
         default
-      [value] ->
-        value
       values ->
-        values
+        ensure_proper_return(key, values)
     end
   end
 
   defp fetch_attribute!(modattrs, key) do
-    case Keyword.fetch!(modattrs, key) do
-      [value] ->
-        value
-      values ->
-        values
-    end
+    value = Keyword.fetch!(modattrs, key)
+    ensure_proper_return(key, value)
+  end
+
+  defp ensure_proper_return(key, [value]) when key in [:command_name, :enforcing, :version] do
+    value
+  end
+  defp ensure_proper_return(key, values) when key in [:permissions, :rules] do
+    :lists.flatten(values)
+  end
+  defp ensure_proper_return(_, value) do
+    value
   end
 
 end
