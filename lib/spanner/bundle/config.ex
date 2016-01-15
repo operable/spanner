@@ -221,7 +221,7 @@ defmodule Spanner.Bundle.Config do
   end
 
   defp invalid_calling_convention?(module),
-    do: !(module.calling_convention() in ["bound", "all"])
+    do: not(module.calling_convention() in ["bound", "all"])
 
   defp mismatched_calling_convention?(module) do
     cond do
