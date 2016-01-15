@@ -171,33 +171,36 @@ defmodule Spanner.Bundle.Config do
   defp only_commands(modules),
     do: Enum.filter(modules, &GenCommand.is_command?/1)
 
-  defp command_map!(module) do
-    case valid_module(module) do
-      {:ok, module} ->
-        %{"name" => module.command_name(),
-          "enforcing" => module.enforcing?(),
-          "calling_convention" => module.calling_convention(),
-          "version" => version(module),
-          "options" => module.options,
-          "documentation" => case Code.get_docs(module, :moduledoc) do
-                               {_line, doc} ->
-                                 # If a module doesn't have a module doc,
-                                 # then it'll return a tuple of `{1, nil}`,
-                                 # so that works out fine here.
-                                 doc
-                               nil ->
-                                 # TODO: Transition away from @moduledoc
-                                 # to our own thing; modules defined in
-                                 # test scripts apparently can access
-                                 # @moduledocs
-                                 nil
-                             end,
-            "module" => inspect(module)}
-      {:error, error, module} ->
-        error_msg(error, module)
-        |> Logger.error
-        throw(error)
-    end
+  defp command_map!(module) when is_atom(module) do
+    valid_module(module)
+    |> command_map!
+  end
+  defp command_map!({:ok, module}) do
+    {:ok, module} ->
+      %{"name" => module.command_name(),
+        "enforcing" => module.enforcing?(),
+        "calling_convention" => module.calling_convention(),
+        "version" => version(module),
+        "options" => module.options,
+        "documentation" => case Code.get_docs(module, :moduledoc) do
+                             {_line, doc} ->
+                               # If a module doesn't have a module doc,
+                               # then it'll return a tuple of `{1, nil}`,
+                               # so that works out fine here.
+                               doc
+                             nil ->
+                               # TODO: Transition away from @moduledoc
+                               # to our own thing; modules defined in
+                               # test scripts apparently can access
+                               # @moduledocs
+                               nil
+                           end,
+          "module" => inspect(module)}
+  end
+  defp command_map!({:error, error, module}) do
+    error_msg(error, module)
+    |> Logger.error
+    throw(error)
   end
 
   defp version(module) do
