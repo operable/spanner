@@ -166,6 +166,8 @@ defmodule Spanner.GenCommand do
   defstruct [mq_conn: nil,
              cb_module: nil,
              cb_state: nil,
+             command_name: nil,
+             bundle_name: nil,
              topic: nil]
 
   @doc """
@@ -179,8 +181,10 @@ defmodule Spanner.GenCommand do
   * `args`: will be passed to `module.info/1` to generate callback
     state
   """
-  def start_link(module, args),
-    do: GenServer.start_link(__MODULE__, [module: module, args: args])
+  def start_link(bundle, command, module, args) do
+    GenServer.start_link(__MODULE__, [bundle: bundle, command: command,
+                                      module: module, args: args])
+  end
 
   @doc """
   Callback for the underlying `GenServer` implementation of
@@ -188,7 +192,7 @@ defmodule Spanner.GenCommand do
 
   """
   @spec init(Keyword.t) :: {:ok, Spanner.GenCommand.state} | {:error, term()}
-  def init([module: module, args: args]) do
+  def init([bundle: bundle, command: command, module: module, args: args]) do
     # Trap exits for if / when the message bus connection dies; see
     # handle_info/2 for more
     :erlang.process_flag(:trap_exit, true)
@@ -198,7 +202,8 @@ defmodule Spanner.GenCommand do
     case Carrier.Messaging.Connection.connect do
       {:ok, conn} ->
         {:ok, %Carrier.Credentials{id: relay_id}} = Carrier.CredentialManager.get()
-        [topic, reply_topic] = topics = [get_topic(module, relay_id), get_reply_topic(module, relay_id)]
+        [topic, reply_topic] = topics = [command_topic(bundle, command, relay_id),
+                                         command_reply_topic(bundle, command, relay_id)]
         for topic <- topics do
           Logger.debug("#{inspect module}: Command subscribing to #{topic}")
           Carrier.Messaging.Connection.subscribe(conn, topic)
@@ -283,11 +288,11 @@ defmodule Spanner.GenCommand do
 
   ########################################################################
 
-  defp get_topic(module, relay_id),
-    do: "/bot/commands/#{relay_id}/#{bundle_name(module)}/#{module.command_name()}"
+  defp command_topic(bundle_name, command_name, relay_id),
+    do: "/bot/commands/#{relay_id}/#{bundle_name}/#{command_name}"
 
-  defp get_reply_topic(module, relay_id),
-    do: "#{get_topic(module, relay_id)}/reply"
+  defp command_reply_topic(bundle_name, command_name, relay_id),
+    do: "#{command_topic(bundle_name, command_name, relay_id)}/reply"
 
   defp attr_value(module, attr_name) do
     if is_command?(module) do
