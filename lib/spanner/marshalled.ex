@@ -61,7 +61,7 @@ defmodule Spanner.Marshalled do
           end)
         case validate(populated) do
           {:ok, populated} ->
-            {:ok, populated}
+            populated
           {:error, {:empty_field, field}} ->
             raise Spanner.DecodeError, [message: "#{__MODULE__}.#{field} is empty", json: data]
           {:error, reason} ->
