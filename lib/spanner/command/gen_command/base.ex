@@ -184,7 +184,8 @@ defmodule Spanner.GenCommand.Base do
 
       require Spanner.GenCommand.ValidationError
 
-      Module.register_attribute(__MODULE__, :command_name, accumulate: false, persist: false)
+      Module.register_attribute(__MODULE__, :bundle_name, accumulate: false, persist: true)
+      Module.register_attribute(__MODULE__, :command_name, accumulate: false, persist: true)
       Module.register_attribute(__MODULE__, :options, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :permissions, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :raw_rules, accumulate: true, persist: false)
@@ -195,6 +196,7 @@ defmodule Spanner.GenCommand.Base do
                                          permission: 1,
                                          rule: 1]
 
+      @bundle_name unquote(bundle_name)
       @command_name unquote(command_name)
 
       # TODO: Ultimately this should take an argument, but that'll
@@ -205,11 +207,8 @@ defmodule Spanner.GenCommand.Base do
       def init(_args, _service_proxy),
         do: {:ok, []}
 
-      def bundle_name(),
-        do: unquote(bundle_name)
-
       def command_name(),
-        do: unquote(command_name)
+        do: @command_name
 
       def enforcing?(),
         do: unquote(enforcing?)

@@ -71,9 +71,6 @@ defmodule Spanner.GenCommand do
   @doc "The name by which the command is referred to."
   @callback command_name() :: String.t
 
-  @doc "The name of the bundle of which the command is a member."
-  @callback bundle_name() :: String.t
-
   @doc """
   Return all the invocation rules defined for a given command.
 
@@ -134,6 +131,18 @@ defmodule Spanner.GenCommand do
                  end
     behaviours = Keyword.get(attributes, :behaviour, [])
     __MODULE__ in behaviours
+  end
+
+  @doc """
+  Returns bundle name embedded in compiled command file
+  """
+  def bundle_name!(module) do
+    if is_command?(module) do
+      attrs = module.__info__(:attributes)
+      Keyword.fetch!(attrs, :bundle_name)
+    else
+      raise RuntimeError, "#{inspect module} is not a command!"
+    end
   end
 
   ########################################################################
@@ -235,7 +244,7 @@ defmodule Spanner.GenCommand do
         case cb_module.handle_message(req, state.cb_state) do
           {:reply, reply_to, template, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
-            bundle = cb_module.bundle_name()
+            bundle = bundle_name!(cb_module)
             {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
           {:reply, reply_to, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
@@ -279,7 +288,7 @@ defmodule Spanner.GenCommand do
   ########################################################################
 
   defp get_topic(module, relay_id),
-    do: "/bot/commands/#{relay_id}/#{module.bundle_name()}/#{module.command_name()}"
+    do: "/bot/commands/#{relay_id}/#{bundle_name!(module)}/#{module.command_name()}"
 
   defp get_reply_topic(module, relay_id),
     do: "#{get_topic(module, relay_id)}/reply"
