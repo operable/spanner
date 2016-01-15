@@ -121,12 +121,7 @@ defmodule Spanner.GenCommand do
   Returns bundle name embedded in compiled command file
   """
   def bundle_name(module) do
-    if is_command?(module) do
-      attrs = module.__info__(:attributes)
-      Keyword.fetch!(attrs, :bundle_name)
-    else
-      nil
-    end
+    attr_value(module, :bundle_name)
   end
 
   @doc """
@@ -143,12 +138,7 @@ defmodule Spanner.GenCommand do
 
   """
   def options(module) do
-    if is_command?(module) do
-      attrs = module.__info__(:attributes)
-      :lists.flatten(Keyword.get_values(attrs, :options))
-    else
-      nil
-    end
+    attr_values(module, :options)
   end
 
   ########################################################################
@@ -299,4 +289,31 @@ defmodule Spanner.GenCommand do
   defp get_reply_topic(module, relay_id),
     do: "#{get_topic(module, relay_id)}/reply"
 
+  defp attr_value(module, attr_name) do
+    if is_command?(module) do
+      attrs = module.__info__(:attributes)
+      case Keyword.get(attrs, attr_name) do
+        [value] ->
+          value
+        nil ->
+          nil
+      end
+    else
+      nil
+    end
+  end
+
+  defp attr_values(module, attr_name) do
+    if is_command?(module) do
+      attrs = module.__info__(:attributes)
+      case Keyword.get_values(attrs, attr_name) do
+        nil ->
+          nil
+        values ->
+          :lists.flatten(values)
+      end
+    else
+      nil
+    end
+  end
 end
