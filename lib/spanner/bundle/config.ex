@@ -214,8 +214,6 @@ defmodule Spanner.Bundle.Config do
         {:error, :mismatched_calling_convention, module}
       true ->
         {:ok, module}
-      true ->
-        {:ok, module}
     end
   end
 
