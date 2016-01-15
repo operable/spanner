@@ -37,7 +37,7 @@ defmodule Spanner.Marshalled do
 
   defp gen_encoder do
     quote do
-      def encode(%__MODULE__{}=data) do
+      def encode!(%__MODULE__{}=data) do
         Map.from_struct(data)
       end
     end
