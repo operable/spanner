@@ -115,6 +115,11 @@ defmodule Spanner.GenCommand do
   @callback enforcing?() :: boolean()
 
   @doc """
+  Returns the calling convention of the command
+  """
+  @callback calling_convention() :: :all | :bound
+
+  @doc """
   Returns `true` if `module` implements the
   `#{inspect __MODULE__}` behaviour.
   """

@@ -165,15 +165,20 @@ defmodule Spanner.Bundle.Config do
   # Extract all commands from `modules` and generate configuration
   # maps for them
   defp gen_commands(modules) do
-    %{"commands" => Enum.map(only_commands(modules), &command_map/1)}
+    %{"commands" => Enum.map(only_commands(modules), &command_map!/1)}
   end
 
   defp only_commands(modules),
     do: Enum.filter(modules, &GenCommand.is_command?/1)
 
-  defp command_map(module) do
+  defp command_map!(module) when is_atom(module) do
+    valid_module(module)
+    |> command_map!
+  end
+  defp command_map!({:ok, module}) do
     %{"name" => module.command_name(),
       "enforcing" => module.enforcing?(),
+      "calling_convention" => module.calling_convention(),
       "version" => version(module),
       "options" => module.options,
       "documentation" => case Code.get_docs(module, :moduledoc) do
@@ -189,7 +194,12 @@ defmodule Spanner.Bundle.Config do
                              # @moduledocs
                              nil
                          end,
-        "module" => inspect(module)}
+      "module" => inspect(module)}
+  end
+  defp command_map!({:error, error, module}) do
+    error_msg(error, module)
+    |> Logger.error
+    throw(error)
   end
 
   defp version(module) do
@@ -197,4 +207,37 @@ defmodule Spanner.Bundle.Config do
     Logger.warn("#{inspect __MODULE__}: Using hard-coded version of `#{version}` for command `#{inspect module}`!")
     version
   end
+
+  defp valid_module(module) do
+    cond do
+      invalid_calling_convention?(module) ->
+        {:error, :bad_calling_convention, module}
+      mismatched_calling_convention?(module) ->
+        {:error, :mismatched_calling_convention, module}
+      true ->
+        {:ok, module}
+    end
+  end
+
+  defp invalid_calling_convention?(module) do
+    if module.calling_convention() in ["bound", "all"] do
+      false
+    else
+      true
+    end
+  end
+
+  defp mismatched_calling_convention?(module) do
+    cond do
+      module.calling_convention() == "all" && module.enforcing?() == true ->
+        true
+      true ->
+        false
+    end
+  end
+
+  defp error_msg(:bad_calling_convention, module),
+    do: "Error: Bad calling convention in #{inspect module}. I don't know what '#{module.calling_convention()}' is."
+  defp error_msg(:mismatched_calling_convention, module),
+    do: "Error: Mismatched calling convention in #{inspect module}. 'all' can only be used when 'enforcing' is set to false."
 end

@@ -31,6 +31,12 @@ defmodule Spanner.Bundle.Config.Test do
     def handle_message(_,_), do: {:reply, "blah", "blah", "blah"}
   end
 
+  defmodule UnboundCommand do
+    use GenCommand.Base, name: "unbound-command", enforcing: false, bundle: "testing", calling_convention: :all
+
+    def handle_message(_,_), do: {:reply, "blah", "blah", "blah"}
+  end
+
   defmodule NeitherCommandNorService do
     def howdy, do: "Hello World"
   end
@@ -39,18 +45,21 @@ defmodule Spanner.Bundle.Config.Test do
     config = Config.gen_config("testing", [CommandWithoutOptions,
                                            CommandWithOptions,
                                            UnenforcedCommand,
+                                           UnboundCommand,
                                            NeitherCommandNorService], ".")
     assert %{"bundle" => %{"name" => "testing"},
              "commands" => [%{"name" => "command-without-options",
                               "documentation" => nil,
                               "version" => "0.0.1",
                               "enforcing" => true,
+                              "calling_convention" => "bound",
                               "options" => [],
                               "module" => "Spanner.Bundle.Config.Test.CommandWithoutOptions"},
                             %{"name" => "command-with-options",
                               "documentation" => nil,
                               "version" => "0.0.1",
                               "enforcing" => true,
+                              "calling_convention" => "bound",
                               "options" => [%{"name" => "option_1",
                                               "type" => "bool",
                                               "required" => true}],
@@ -59,8 +68,16 @@ defmodule Spanner.Bundle.Config.Test do
                               "documentation" => nil,
                               "version" => "0.0.1",
                               "enforcing" => false,
+                              "calling_convention" => "bound",
                               "options" => [],
-                              "module" => "Spanner.Bundle.Config.Test.UnenforcedCommand"}],
+                              "module" => "Spanner.Bundle.Config.Test.UnenforcedCommand"},
+                            %{"name" => "unbound-command",
+                              "documentation" => nil,
+                              "version" => "0.0.1",
+                              "enforcing" => false,
+                              "calling_convention" => "all",
+                              "options" => [],
+                              "module" => "Spanner.Bundle.Config.Test.UnboundCommand"}],
              "permissions" => ["testing:bar", "testing:baz", "testing:foo"],
              "rules" => [
                "when command is testing:command-with-options must have testing:bar",
