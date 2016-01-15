@@ -165,13 +165,13 @@ defmodule Spanner.Bundle.Config do
   # Extract all commands from `modules` and generate configuration
   # maps for them
   defp gen_commands(modules) do
-    %{"commands" => Enum.map(only_commands(modules), &command_map/1)}
+    %{"commands" => Enum.map(only_commands(modules), &command_map!/1)}
   end
 
   defp only_commands(modules),
     do: Enum.filter(modules, &GenCommand.is_command?/1)
 
-  defp command_map(module) do
+  defp command_map!(module) do
     case valid_module(module) do
       {:ok, module} ->
         %{"name" => module.command_name(),
