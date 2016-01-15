@@ -180,7 +180,7 @@ defmodule Spanner.Bundle.Config do
       "enforcing" => module.enforcing?(),
       "calling_convention" => module.calling_convention(),
       "version" => version(module),
-      "options" => module.options,
+      "options" => GenCommand.options(module),
       "documentation" => case Code.get_docs(module, :moduledoc) do
                            {_line, doc} ->
                              # If a module doesn't have a module doc,

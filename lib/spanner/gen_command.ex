@@ -91,22 +91,6 @@ defmodule Spanner.GenCommand do
   @callback permissions() :: [String.t]
 
   @doc """
-  Return descriptors for all the options a command declares.
-
-  ## Example
-
-      > CommandWithMultipleOptions.options
-      [
-        %{name: "option_1", type: "string", required: true},
-        %{name: "option_2", type: "boolean", required: false},
-        %{name: "option_3", type: "string", required: false}
-      ]
-
-  """
-  @callback options() :: [map()]
-
-
-  @doc """
   Indicates whether a command should skip permission checks or not.
   """
   @callback enforcing?() :: boolean()
@@ -136,12 +120,34 @@ defmodule Spanner.GenCommand do
   @doc """
   Returns bundle name embedded in compiled command file
   """
-  def bundle_name!(module) do
+  def bundle_name(module) do
     if is_command?(module) do
       attrs = module.__info__(:attributes)
       Keyword.fetch!(attrs, :bundle_name)
     else
-      raise RuntimeError, "#{inspect module} is not a command!"
+      nil
+    end
+  end
+
+  @doc """
+  Return descriptors for all the options a command declares.
+
+  ## Example
+
+      > CommandWithMultipleOptions.options
+      [
+        %{name: "option_1", type: "string", required: true},
+        %{name: "option_2", type: "boolean", required: false},
+        %{name: "option_3", type: "string", required: false}
+      ]
+
+  """
+  def options(module) do
+    if is_command?(module) do
+      attrs = module.__info__(:attributes)
+      :lists.flatten(Keyword.get_values(attrs, :options))
+    else
+      nil
     end
   end
 
@@ -244,7 +250,7 @@ defmodule Spanner.GenCommand do
         case cb_module.handle_message(req, state.cb_state) do
           {:reply, reply_to, template, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
-            bundle = bundle_name!(cb_module)
+            bundle = bundle_name(cb_module)
             {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
           {:reply, reply_to, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
@@ -288,7 +294,7 @@ defmodule Spanner.GenCommand do
   ########################################################################
 
   defp get_topic(module, relay_id),
-    do: "/bot/commands/#{relay_id}/#{bundle_name!(module)}/#{module.command_name()}"
+    do: "/bot/commands/#{relay_id}/#{bundle_name(module)}/#{module.command_name()}"
 
   defp get_reply_topic(module, relay_id),
     do: "#{get_topic(module, relay_id)}/reply"

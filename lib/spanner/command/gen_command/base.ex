@@ -111,7 +111,7 @@ defmodule Spanner.GenCommand.Base do
       end
 
   These options can be inspected at runtime using
-  `options/0`, which the module generates for you.
+  `GenCommand.options/1`.
 
   ### Permissions
 
@@ -353,9 +353,6 @@ defmodule Spanner.GenCommand.Base do
 
       def rules,
         do: @rules
-
-      def options,
-        do: @options |> Enum.reverse
 
       def permissions,
         do: @permissions |> Enum.reverse
