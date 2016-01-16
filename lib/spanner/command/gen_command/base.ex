@@ -169,7 +169,7 @@ defmodule Spanner.GenCommand.Base do
     bundle_name = Keyword.fetch!(opts, :bundle)
     command_name = Keyword.get(opts, :name, default_name)
     enforcing = ensure_valid(opts, :enforcing, [true, false], true, command_name)
-    calling_convention = ensure_valid(opts, :calling_convention, [:all, :bound], :bound, command_name)
+    calling_convention = Atom.to_string(ensure_valid(opts, :calling_convention, [:all, :bound], :bound, command_name))
 
     quote location: :keep do
       @behaviour Spanner.GenCommand
