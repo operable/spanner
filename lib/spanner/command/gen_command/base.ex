@@ -42,11 +42,6 @@ defmodule Spanner.GenCommand.Base do
         # ...
       end
 
-  The name can be inspected at runtime with the `command_name/0`
-  callback, which the module generates for you.
-
-      This.Is.My.SuperSnazzyCommand.command_name() # => "super-command"
-
   ### Enforced/Secure Commands
 
   By default commands enforced, meaning they require permissions to run.
@@ -207,9 +202,6 @@ defmodule Spanner.GenCommand.Base do
       def init(_args, _service_proxy),
         do: {:ok, []}
 
-      def command_name(),
-        do: @command_name
-
       def enforcing?(),
         do: unquote(enforcing?)
 
@@ -350,9 +342,6 @@ defmodule Spanner.GenCommand.Base do
             raise ValidationError.new "Bad rule for command \"#{@command_name}\": #{message}"
         end
       end
-
-      def rules,
-        do: @rules
 
       def permissions,
         do: @permissions |> Enum.reverse

@@ -137,16 +137,16 @@ defmodule Spanner.GenCommand.Test do
   end
 
   test "commands do not need to specify any rules" do
-    assert [] = TestCommand.rules
+    assert [] = GenCommand.rules(TestCommand)
   end
 
   test "commands can specify a single rule" do
-    assert ["when command is foo:command-with-rules must have foo:blah"] = CommandWithRules.rules
+    assert ["when command is foo:command-with-rules must have foo:blah"] = GenCommand.rules(CommandWithRules)
   end
 
   test "commands can specify multiple rules" do
-    assert ["when command is foo:command-with-multiple-rules must have foo:blah",
-            "when command is foo:command-with-multiple-rules with arg[0] == 'stuff' must have foo:admin"] = CommandWithMultipleRules.rules
+    assert ["when command is foo:command-with-multiple-rules with arg[0] == 'stuff' must have foo:admin",
+            "when command is foo:command-with-multiple-rules must have foo:blah"] = GenCommand.rules(CommandWithMultipleRules)
   end
 
   test "can't compile without syntactically valid rules" do

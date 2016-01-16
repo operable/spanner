@@ -138,7 +138,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_rules(modules) do
     rules = modules
     |> only_commands
-    |> Enum.flat_map(&(&1.rules))
+    |> Enum.flat_map(&(GenCommand.rules(&1)))
     |> Enum.sort
 
     %{"rules" => rules}
@@ -176,7 +176,7 @@ defmodule Spanner.Bundle.Config do
     |> command_map!
   end
   defp command_map!({:ok, module}) do
-    %{"name" => module.command_name(),
+    %{"name" => GenCommand.command_name(module),
       "enforcing" => module.enforcing?(),
       "calling_convention" => module.calling_convention(),
       "version" => version(module),

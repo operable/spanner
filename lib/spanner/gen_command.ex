@@ -103,6 +103,13 @@ defmodule Spanner.GenCommand do
   end
 
   @doc """
+  Returns command name embedded in compiled command file
+  """
+  def command_name(module) do
+    attr_value(module, :command_name)
+  end
+
+  @doc """
   Return descriptors for all the options a command declares.
 
   ## Example
@@ -117,6 +124,13 @@ defmodule Spanner.GenCommand do
   """
   def options(module) do
     attr_values(module, :options)
+  end
+
+  @doc """
+  Return permission rules compiled into the command file
+  """
+  def rules(module) do
+    attr_values(module, :rules)
   end
 
   ########################################################################
