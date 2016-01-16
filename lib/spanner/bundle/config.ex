@@ -177,7 +177,7 @@ defmodule Spanner.Bundle.Config do
   end
   defp command_map!({:ok, module}) do
     %{"name" => GenCommand.command_name(module),
-      "enforcing" => module.enforcing?(),
+      "enforcing" => GenCommand.enforcing?(module),
       "calling_convention" => module.calling_convention(),
       "version" => version(module),
       "options" => GenCommand.options(module),
@@ -229,7 +229,7 @@ defmodule Spanner.Bundle.Config do
 
   defp mismatched_calling_convention?(module) do
     cond do
-      module.calling_convention() == "all" && module.enforcing?() == true ->
+      module.calling_convention() == "all" && GenCommand.enforcing?(module) == true ->
         true
       true ->
         false

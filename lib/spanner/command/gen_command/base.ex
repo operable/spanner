@@ -168,7 +168,7 @@ defmodule Spanner.GenCommand.Base do
 
     bundle_name = Keyword.fetch!(opts, :bundle)
     command_name = Keyword.get(opts, :name, default_name)
-    enforcing? = Keyword.get(opts, :enforcing, true)
+    enforcing = Keyword.get(opts, :enforcing, true)
     calling_convention = Keyword.get(opts, :calling_convention, :bound)
 
     quote location: :keep do
@@ -182,6 +182,7 @@ defmodule Spanner.GenCommand.Base do
       Module.register_attribute(__MODULE__, :permissions, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :raw_rules, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :rules, accumulate: true, persist: true)
+      Module.register_attribute(__MODULE__, :enforcing, accumulate: false, persist: true)
 
       import unquote(__MODULE__), only: [option: 1,
                                          option: 2,
@@ -190,12 +191,10 @@ defmodule Spanner.GenCommand.Base do
 
       @bundle_name unquote(bundle_name)
       @command_name unquote(command_name)
+      @enforcing unquote(enforcing)
 
       def init(_args, _service_proxy),
         do: {:ok, []}
-
-      def enforcing?(),
-        do: unquote(enforcing?)
 
       def calling_convention() do
         case unquote(calling_convention) do

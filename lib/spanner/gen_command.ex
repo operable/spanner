@@ -64,11 +64,6 @@ defmodule Spanner.GenCommand do
                {:noreply, callback_state()}
 
   @doc """
-  Indicates whether a command should skip permission checks or not.
-  """
-  @callback enforcing?() :: boolean()
-
-  @doc """
   Returns the calling convention of the command
   """
   @callback calling_convention() :: :all | :bound
@@ -134,6 +129,14 @@ defmodule Spanner.GenCommand do
   def permissions(module) do
     attr_values(module, :permissions)
   end
+
+  @doc """
+  Indicates whether a command should skip permission checks or not.
+  """
+  def enforcing?(module) do
+    attr_value(module, :enforcing) == true
+  end
+
 
 
   ########################################################################
