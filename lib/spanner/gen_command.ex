@@ -45,11 +45,6 @@ defmodule Spanner.GenCommand do
   @opaque service_proxy() :: pid()
 
   @doc """
-  Start a command in the context of a bundle supervision tree.
-  """
-  @callback start_link() :: pid()
-
-  @doc """
   Initializes the callback module's internal state.
 
   If your command is stateless and requires no interaction with
@@ -67,23 +62,6 @@ defmodule Spanner.GenCommand do
             :: {:reply, message_bus_topic(), command_response(), callback_state()} |
                {:reply, message_bus_topic(), template(), command_response(), callback_state()} |
                {:noreply, callback_state()}
-
-  @doc "The name by which the command is referred to."
-  @callback command_name() :: String.t
-
-  @doc """
-  Return all the invocation rules defined for a given command.
-
-  ## Example
-
-      > MyCommand.rules
-      [
-        "when command is my-command must have bundle:admin",
-        "when command is my-command with arg[0] == 'foo' must have bundle:read"
-      ]
-
-  """
-  @callback rules() :: [String.t]
 
   @doc """
   Return the names of the permissions that the command depends on.
