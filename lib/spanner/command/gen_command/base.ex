@@ -168,8 +168,8 @@ defmodule Spanner.GenCommand.Base do
 
     bundle_name = Keyword.fetch!(opts, :bundle)
     command_name = Keyword.get(opts, :name, default_name)
-    enforcing = Keyword.get(opts, :enforcing, true)
-    calling_convention = Keyword.get(opts, :calling_convention, :bound)
+    enforcing = ensure_valid(opts, :enforcing, [true, false], true, command_name)
+    calling_convention = ensure_valid(opts, :calling_convention, [:all, :bound], :bound, command_name)
 
     quote location: :keep do
       @behaviour Spanner.GenCommand
@@ -183,6 +183,7 @@ defmodule Spanner.GenCommand.Base do
       Module.register_attribute(__MODULE__, :raw_rules, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :rules, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :enforcing, accumulate: false, persist: true)
+      Module.register_attribute(__MODULE__, :calling_convention, accumulate: false, persist: true)
 
       import unquote(__MODULE__), only: [option: 1,
                                          option: 2,
@@ -192,18 +193,10 @@ defmodule Spanner.GenCommand.Base do
       @bundle_name unquote(bundle_name)
       @command_name unquote(command_name)
       @enforcing unquote(enforcing)
+      @calling_convention unquote(calling_convention)
 
       def init(_args, _service_proxy),
         do: {:ok, []}
-
-      def calling_convention() do
-        case unquote(calling_convention) do
-          conv when is_atom(conv) ->
-            Atom.to_string(conv)
-          conv when is_binary(conv) ->
-            conv
-        end
-      end
 
       defoverridable [init: 2]
 
@@ -338,5 +331,19 @@ defmodule Spanner.GenCommand.Base do
       @rules unquote(rules)
     end
   end
+
+  defp ensure_valid(opts, opt_name, allowed, default, command_name) do
+    opt_value = Keyword.get(opts, opt_name, default)
+    cond do
+      opt_value == default ->
+        opt_value
+      Enum.member?(allowed, opt_value) ->
+        opt_value
+      true ->
+        raise ValidationError.new "Illegal option value for \"#{opt_name}\" in command \"#{command_name}\". " <>
+        "Value must be one of #{inspect allowed} but found \"#{opt_value}\"."
+    end
+  end
+
 end
 

@@ -64,11 +64,6 @@ defmodule Spanner.GenCommand do
                {:noreply, callback_state()}
 
   @doc """
-  Returns the calling convention of the command
-  """
-  @callback calling_convention() :: :all | :bound
-
-  @doc """
   Returns `true` if `module` implements the
   `#{inspect __MODULE__}` behaviour.
   """
@@ -137,6 +132,12 @@ defmodule Spanner.GenCommand do
     attr_value(module, :enforcing) == true
   end
 
+  @doc """
+  Returns the calling convention of the command
+  """
+  def calling_convention(module) do
+    attr_value(module, :calling_convention)
+  end
 
 
   ########################################################################

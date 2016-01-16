@@ -178,7 +178,7 @@ defmodule Spanner.Bundle.Config do
   defp command_map!({:ok, module}) do
     %{"name" => GenCommand.command_name(module),
       "enforcing" => GenCommand.enforcing?(module),
-      "calling_convention" => module.calling_convention(),
+      "calling_convention" => GenCommand.calling_convention(module),
       "version" => version(module),
       "options" => GenCommand.options(module),
       "documentation" => case Code.get_docs(module, :moduledoc) do
@@ -209,35 +209,22 @@ defmodule Spanner.Bundle.Config do
   end
 
   defp valid_module(module) do
-    cond do
-      invalid_calling_convention?(module) ->
-        {:error, :bad_calling_convention, module}
-      mismatched_calling_convention?(module) ->
-        {:error, :mismatched_calling_convention, module}
-      true ->
-        {:ok, module}
-    end
-  end
-
-  defp invalid_calling_convention?(module) do
-    if module.calling_convention() in ["bound", "all"] do
-      false
+    if mismatched_calling_convention?(module) do
+      {:error, :mismatched_calling_convention, module}
     else
-      true
+      {:ok, module}
     end
   end
 
   defp mismatched_calling_convention?(module) do
     cond do
-      module.calling_convention() == "all" && GenCommand.enforcing?(module) == true ->
+      GenCommand.calling_convention(module) == :all && GenCommand.enforcing?(module) == true ->
         true
       true ->
         false
     end
   end
 
-  defp error_msg(:bad_calling_convention, module),
-    do: "Error: Bad calling convention in #{inspect module}. I don't know what '#{module.calling_convention()}' is."
   defp error_msg(:mismatched_calling_convention, module),
     do: "Error: Mismatched calling convention in #{inspect module}. 'all' can only be used when 'enforcing' is set to false."
 end
