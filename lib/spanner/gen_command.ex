@@ -159,7 +159,7 @@ defmodule Spanner.GenCommand do
 
         # Note, the reply topic is only used in the service proxy
         service_proxy = Spanner.ServiceProxy.new(conn, reply_topic)
-
+        args = [{:bundle, bundle}, {:command, command}|args]
         case module.init(args, service_proxy) do
           {:ok, state} ->
             {:ok, %__MODULE__{mq_conn: conn,
