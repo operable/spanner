@@ -80,66 +80,6 @@ defmodule Spanner.GenCommand do
     __MODULE__ in behaviours
   end
 
-  @doc """
-  Returns bundle name embedded in compiled command file
-  """
-  def bundle_name(module) do
-    attr_value(module, :bundle_name)
-  end
-
-  @doc """
-  Returns command name embedded in compiled command file
-  """
-  def command_name(module) do
-    attr_value(module, :command_name)
-  end
-
-  @doc """
-  Return descriptors for all the options a command declares.
-
-  ## Example
-
-      > CommandWithMultipleOptions.options
-      [
-        %{name: "option_1", type: "string", required: true},
-        %{name: "option_2", type: "boolean", required: false},
-        %{name: "option_3", type: "string", required: false}
-      ]
-
-  """
-  def options(module) do
-    attr_values(module, :options)
-  end
-
-  @doc """
-  Return permission rules compiled into the command file
-  """
-  def rules(module) do
-    attr_values(module, :rules)
-  end
-
-  @doc """
-  Return the names of the permissions that the command depends on.
-  """
-  def permissions(module) do
-    attr_values(module, :permissions)
-  end
-
-  @doc """
-  Indicates whether a command should skip permission checks or not.
-  """
-  def enforcing?(module) do
-    attr_value(module, :enforcing) == true
-  end
-
-  @doc """
-  Returns the calling convention of the command
-  """
-  def calling_convention(module) do
-    attr_value(module, :calling_convention)
-  end
-
-
   ########################################################################
   # Implementation
 
@@ -237,14 +177,13 @@ defmodule Spanner.GenCommand do
   end
 
   def handle_info({:publish, topic, message},
-                  %__MODULE__{topic: topic, cb_module: cb_module}=state) do
+                  %__MODULE__{topic: topic, cb_module: cb_module, bundle_name: bundle}=state) do
     case Carrier.CredentialManager.verify_signed_message(message) do
       {true, payload} ->
         req = Command.Request.decode!(payload)
         case cb_module.handle_message(req, state.cb_state) do
           {:reply, reply_to, template, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
-            bundle = bundle_name(cb_module)
             {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
           {:reply, reply_to, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
@@ -293,31 +232,4 @@ defmodule Spanner.GenCommand do
   defp command_reply_topic(bundle_name, command_name, relay_id),
     do: "#{command_topic(bundle_name, command_name, relay_id)}/reply"
 
-  defp attr_value(module, attr_name) do
-    if is_command?(module) do
-      attrs = module.__info__(:attributes)
-      case Keyword.get(attrs, attr_name) do
-        [value] ->
-          value
-        nil ->
-          nil
-      end
-    else
-      nil
-    end
-  end
-
-  defp attr_values(module, attr_name) do
-    if is_command?(module) do
-      attrs = module.__info__(:attributes)
-      case Keyword.get_values(attrs, attr_name) do
-        nil ->
-          nil
-        values ->
-          :lists.flatten(values)
-      end
-    else
-      nil
-    end
-  end
 end

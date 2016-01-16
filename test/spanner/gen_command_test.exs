@@ -1,4 +1,4 @@
-defmodule Spanner.GenCommand.Test do
+defmodule Spanner.GenCommand.Base.Test do
   use ExUnit.Case
 
   alias Spanner.GenCommand
@@ -85,15 +85,15 @@ defmodule Spanner.GenCommand.Test do
   end
 
   test "commands can have no options" do
-    assert [] = GenCommand.options(TestCommand)
+    assert [] = GenCommand.Base.options(TestCommand)
   end
 
   test "commands can have one option" do
-    assert [%{"name" => "my_option", "type" => "string", "required" => true}] = GenCommand.options(CommandWithOption)
+    assert [%{"name" => "my_option", "type" => "string", "required" => true}] = GenCommand.Base.options(CommandWithOption)
   end
 
   test "options default to optional and string-typed" do
-    assert [%{"name" => "default_option", "type" => "string", "required" => false}] = GenCommand.options(CommandWithDefaultOption)
+    assert [%{"name" => "default_option", "type" => "string", "required" => false}] = GenCommand.Base.options(CommandWithDefaultOption)
   end
 
   test "commands can have multiple options" do
@@ -101,27 +101,27 @@ defmodule Spanner.GenCommand.Test do
       %{"name" => "my_option", "type" => "string", "required" => true},
       %{"name" => "another_option", "type" => "boolean", "required" => false},
       %{"name" => "foooooo", "type" => "string", "required" => false}
-    ] == GenCommand.options(CommandWithMultipleOptions)
+    ] == GenCommand.Base.options(CommandWithMultipleOptions)
   end
 
   test "commands may require no permissions by default" do
-    assert [] = GenCommand.permissions(TestCommand)
+    assert [] = GenCommand.Base.permissions(TestCommand)
   end
 
   test "can specify a single permission for a command" do
-    assert ["foo"] = GenCommand.permissions(CommandWithPermission)
+    assert ["foo"] = GenCommand.Base.permissions(CommandWithPermission)
   end
 
   test "can specify multiple permissions for a command" do
-    assert ["foo", "bar", "baz"] = GenCommand.permissions(CommandWithMultiplePermissions)
+    assert ["foo", "bar", "baz"] = GenCommand.Base.permissions(CommandWithMultiplePermissions)
   end
 
   test "can specify multiple permissions for a command at once" do
-    assert ["one", "two", "three"] = GenCommand.permissions(CommandWithMultiplePermissionsDeclaredAtOnce)
+    assert ["one", "two", "three"] = GenCommand.Base.permissions(CommandWithMultiplePermissionsDeclaredAtOnce)
   end
 
   test "permissions can be declared with a mix of singles and multiples" do
-    assert ["a", "b", "c"] = GenCommand.permissions(CommandWithMixOfPermissions)
+    assert ["a", "b", "c"] = GenCommand.Base.permissions(CommandWithMixOfPermissions)
   end
 
   test "permissions must be specified *without* a namespace" do
@@ -131,23 +131,22 @@ defmodule Spanner.GenCommand.Test do
       def handle_message(_,_), do: {:reply, "blah", "blah", :blah}
     end
 
-    error = catch_error(Module.create(BadPermissionCommand, contents, Macro.Env.location(__ENV__)))
-    assert error.__struct__ == Spanner.GenCommand.ValidationError
-    assert String.starts_with?(error.message, "Please specify permissions without the bundle namespace: `bundle:command`")
+    %ValidationError{message: message} = catch_error(Module.create(BadPermissionCommand, contents, Macro.Env.location(__ENV__)))
+    assert String.starts_with?(message, "Please specify permissions without the bundle namespace: `bundle:command`")
 
   end
 
   test "commands do not need to specify any rules" do
-    assert [] = GenCommand.rules(TestCommand)
+    assert [] = GenCommand.Base.rules(TestCommand)
   end
 
   test "commands can specify a single rule" do
-    assert ["when command is foo:command-with-rules must have foo:blah"] = GenCommand.rules(CommandWithRules)
+    assert ["when command is foo:command-with-rules must have foo:blah"] = GenCommand.Base.rules(CommandWithRules)
   end
 
   test "commands can specify multiple rules" do
     assert ["when command is foo:command-with-multiple-rules with arg[0] == 'stuff' must have foo:admin",
-            "when command is foo:command-with-multiple-rules must have foo:blah"] = GenCommand.rules(CommandWithMultipleRules)
+            "when command is foo:command-with-multiple-rules must have foo:blah"] = GenCommand.Base.rules(CommandWithMultipleRules)
   end
 
   test "can't compile without syntactically valid rules" do
