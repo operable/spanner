@@ -122,7 +122,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_permissions(bundle_name, modules) do
     permissions = modules
     |> only_commands
-    |> Enum.map(&(&1.permissions))
+    |> Enum.map(&(GenCommand.permissions(&1)))
     |> Enum.map(&Enum.into(&1, HashSet.new))
     |> Enum.reduce(HashSet.new, &Set.union/2)
     |> Enum.map(&namespace_permission(bundle_name, &1))

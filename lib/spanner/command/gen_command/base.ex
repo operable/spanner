@@ -125,8 +125,7 @@ defmodule Spanner.GenCommand.Base do
 
       end
 
-  Permissions can be inspected at runtime using `permissions/0`, which
-  the module generates for you.
+  Permissions can be inspected at runtime using `GenCommand.permissions/1`.
 
   ### Rules
 
@@ -158,9 +157,7 @@ defmodule Spanner.GenCommand.Base do
 
   If any rule is invalid, an error will be raised at compile time.
 
-  All valid rules are available at run time by calling `rules/0`,
-  which the module generates for you.
-
+  Rules can be inspected at runtime using `GenCommand.rules/1`.
   """
 
   defmacro __using__(opts) do
@@ -193,11 +190,6 @@ defmodule Spanner.GenCommand.Base do
 
       @bundle_name unquote(bundle_name)
       @command_name unquote(command_name)
-
-      # TODO: Ultimately this should take an argument, but that'll
-      # need to be addressed in the bundle supervisor as well
-      def start_link(),
-        do: Spanner.GenCommand.start_link(__MODULE__, [])
 
       def init(_args, _service_proxy),
         do: {:ok, []}
@@ -317,35 +309,35 @@ defmodule Spanner.GenCommand.Base do
   defmacro __before_compile__(_env) do
     alias Spanner.GenCommand.ValidationError
 
-    quote location: :keep do
-      for rule <- @raw_rules do
-        case Piper.Permissions.Parser.parse(rule) do
-          {:ok, %Ast.Rule{}=parsed, _} ->
-            # It parsed! Save it for posterity
-            command_name = case String.split(parsed.command, ":", parts: 2) do
-                             [bundle_name, command_name] ->
+    callermod = __CALLER__.module
+    command_name = Module.get_attribute(callermod, :command_name)
+    raw_rules = Module.get_attribute(callermod, :raw_rules)
+    rules = for rule <- raw_rules do
+      case Piper.Permissions.Parser.parse(rule) do
+        {:ok, %Ast.Rule{}=parsed, _} ->
+          # It parsed! Save it for posterity
+            rule_command_name = case String.split(parsed.command, ":", parts: 2) do
+                             [_, command_name] ->
                                command_name
                              [command_name] ->
                                # Commands must be namespaced with their bundle.
-                               # Bail out of that's not the case.
-                               raise ValidationError.new "Rule definition missing bundle name for command \"#{command_name}\"."
+                               # Bail out if that's not the case.
+                               raise ValidationError.new "Rule for command #{command_name} missing bundle name: \"#{rule}\""
                            end
-
             # NOTE: This doesn't appear to work as a case statement
-            if command_name == @command_name do
-              @rules rule
+            if rule_command_name == command_name do
+              rule
             else
-              raise ValidationError.new "Defining a rule for command \"#{parsed.command}\", but this command is \"#{@command_name}\"!"
+              raise ValidationError.new "Rule for \"#{command_name}\" references \"#{rule_command_name}\": \"#{rule}\""
             end
           {:error, message} ->
             # It's invalid! bail out!
-            raise ValidationError.new "Bad rule for command \"#{@command_name}\": #{message}"
+            raise ValidationError.new "Error parsing rule \"#{rule}\" for command \"#{command_name}\": #{inspect message}"
         end
-      end
-
-      def permissions,
-        do: @permissions |> Enum.reverse
+    end
+    quote do
+      @rules unquote(rules)
     end
   end
-
 end
+

@@ -64,11 +64,6 @@ defmodule Spanner.GenCommand do
                {:noreply, callback_state()}
 
   @doc """
-  Return the names of the permissions that the command depends on.
-  """
-  @callback permissions() :: [String.t]
-
-  @doc """
   Indicates whether a command should skip permission checks or not.
   """
   @callback enforcing?() :: boolean()
@@ -132,6 +127,14 @@ defmodule Spanner.GenCommand do
   def rules(module) do
     attr_values(module, :rules)
   end
+
+  @doc """
+  Return the names of the permissions that the command depends on.
+  """
+  def permissions(module) do
+    attr_values(module, :permissions)
+  end
+
 
   ########################################################################
   # Implementation
