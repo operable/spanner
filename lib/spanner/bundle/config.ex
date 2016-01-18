@@ -122,7 +122,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_permissions(bundle_name, modules) do
     permissions = modules
     |> only_commands
-    |> Enum.map(&(&1.permissions))
+    |> Enum.map(&(GenCommand.permissions(&1)))
     |> Enum.map(&Enum.into(&1, HashSet.new))
     |> Enum.reduce(HashSet.new, &Set.union/2)
     |> Enum.map(&namespace_permission(bundle_name, &1))
@@ -138,7 +138,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_rules(modules) do
     rules = modules
     |> only_commands
-    |> Enum.flat_map(&(&1.rules))
+    |> Enum.flat_map(&(GenCommand.rules(&1)))
     |> Enum.sort
 
     %{"rules" => rules}
@@ -176,11 +176,11 @@ defmodule Spanner.Bundle.Config do
     |> command_map!
   end
   defp command_map!({:ok, module}) do
-    %{"name" => module.command_name(),
-      "enforcing" => module.enforcing?(),
-      "calling_convention" => module.calling_convention(),
+    %{"name" => GenCommand.command_name(module),
+      "enforcing" => GenCommand.enforcing?(module),
+      "calling_convention" => GenCommand.calling_convention(module),
       "version" => version(module),
-      "options" => module.options,
+      "options" => GenCommand.options(module),
       "documentation" => case Code.get_docs(module, :moduledoc) do
                            {_line, doc} ->
                              # If a module doesn't have a module doc,
@@ -209,35 +209,22 @@ defmodule Spanner.Bundle.Config do
   end
 
   defp valid_module(module) do
-    cond do
-      invalid_calling_convention?(module) ->
-        {:error, :bad_calling_convention, module}
-      mismatched_calling_convention?(module) ->
-        {:error, :mismatched_calling_convention, module}
-      true ->
-        {:ok, module}
-    end
-  end
-
-  defp invalid_calling_convention?(module) do
-    if module.calling_convention() in ["bound", "all"] do
-      false
+    if mismatched_calling_convention?(module) do
+      {:error, :mismatched_calling_convention, module}
     else
-      true
+      {:ok, module}
     end
   end
 
   defp mismatched_calling_convention?(module) do
     cond do
-      module.calling_convention() == "all" && module.enforcing?() == true ->
+      GenCommand.calling_convention(module) == :all && GenCommand.enforcing?(module) == true ->
         true
       true ->
         false
     end
   end
 
-  defp error_msg(:bad_calling_convention, module),
-    do: "Error: Bad calling convention in #{inspect module}. I don't know what '#{module.calling_convention()}' is."
   defp error_msg(:mismatched_calling_convention, module),
     do: "Error: Mismatched calling convention in #{inspect module}. 'all' can only be used when 'enforcing' is set to false."
 end

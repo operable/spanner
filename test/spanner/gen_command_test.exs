@@ -2,6 +2,7 @@ defmodule Spanner.GenCommand.Test do
   use ExUnit.Case
 
   alias Spanner.GenCommand
+  alias Spanner.GenCommand.ValidationError
 
   defmodule TestCommand do
     use GenCommand.Base, bundle: "foo"
@@ -84,15 +85,15 @@ defmodule Spanner.GenCommand.Test do
   end
 
   test "commands can have no options" do
-    assert [] = TestCommand.options
+    assert [] = GenCommand.options(TestCommand)
   end
 
   test "commands can have one option" do
-    assert [%{"name" => "my_option", "type" => "string", "required" => true}] = CommandWithOption.options
+    assert [%{"name" => "my_option", "type" => "string", "required" => true}] = GenCommand.options(CommandWithOption)
   end
 
   test "options default to optional and string-typed" do
-    assert [%{"name" => "default_option", "type" => "string", "required" => false}] = CommandWithDefaultOption.options
+    assert [%{"name" => "default_option", "type" => "string", "required" => false}] = GenCommand.options(CommandWithDefaultOption)
   end
 
   test "commands can have multiple options" do
@@ -100,27 +101,27 @@ defmodule Spanner.GenCommand.Test do
       %{"name" => "my_option", "type" => "string", "required" => true},
       %{"name" => "another_option", "type" => "boolean", "required" => false},
       %{"name" => "foooooo", "type" => "string", "required" => false}
-    ] == CommandWithMultipleOptions.options
+    ] == GenCommand.options(CommandWithMultipleOptions)
   end
 
   test "commands may require no permissions by default" do
-    assert [] = TestCommand.permissions
+    assert [] = GenCommand.permissions(TestCommand)
   end
 
   test "can specify a single permission for a command" do
-    assert ["foo"] = CommandWithPermission.permissions
+    assert ["foo"] = GenCommand.permissions(CommandWithPermission)
   end
 
   test "can specify multiple permissions for a command" do
-    assert ["foo", "bar", "baz"] = CommandWithMultiplePermissions.permissions
+    assert ["foo", "bar", "baz"] = GenCommand.permissions(CommandWithMultiplePermissions)
   end
 
   test "can specify multiple permissions for a command at once" do
-    assert ["one", "two", "three"] = CommandWithMultiplePermissionsDeclaredAtOnce.permissions
+    assert ["one", "two", "three"] = GenCommand.permissions(CommandWithMultiplePermissionsDeclaredAtOnce)
   end
 
   test "permissions can be declared with a mix of singles and multiples" do
-    assert ["a", "b", "c"] = CommandWithMixOfPermissions.permissions
+    assert ["a", "b", "c"] = GenCommand.permissions(CommandWithMixOfPermissions)
   end
 
   test "permissions must be specified *without* a namespace" do
@@ -137,16 +138,16 @@ defmodule Spanner.GenCommand.Test do
   end
 
   test "commands do not need to specify any rules" do
-    assert [] = TestCommand.rules
+    assert [] = GenCommand.rules(TestCommand)
   end
 
   test "commands can specify a single rule" do
-    assert ["when command is foo:command-with-rules must have foo:blah"] = CommandWithRules.rules
+    assert ["when command is foo:command-with-rules must have foo:blah"] = GenCommand.rules(CommandWithRules)
   end
 
   test "commands can specify multiple rules" do
-    assert ["when command is foo:command-with-multiple-rules must have foo:blah",
-            "when command is foo:command-with-multiple-rules with arg[0] == 'stuff' must have foo:admin"] = CommandWithMultipleRules.rules
+    assert ["when command is foo:command-with-multiple-rules with arg[0] == 'stuff' must have foo:admin",
+            "when command is foo:command-with-multiple-rules must have foo:blah"] = GenCommand.rules(CommandWithMultipleRules)
   end
 
   test "can't compile without syntactically valid rules" do
@@ -156,9 +157,8 @@ defmodule Spanner.GenCommand.Test do
       def handle_message(_,_), do: {:reply, "blah", "blah", :blah}
     end
 
-    error = catch_error(Module.create(BadRuleCommand, contents, Macro.Env.location(__ENV__)))
-    assert error.__struct__ == Spanner.GenCommand.ValidationError
-    assert String.starts_with?(error.message, "Bad rule for command \"badrulecommand\"")
+    %ValidationError{message: message} = catch_error(Module.create(BadRuleCommand, contents, Macro.Env.location(__ENV__)))
+    assert String.starts_with?(message, "Error parsing rule \"not a rule, no way, no how\" for command \"badrulecommand\"")
   end
 
   test "can't compile if rule refers to a different command" do
@@ -168,9 +168,8 @@ defmodule Spanner.GenCommand.Test do
       def handle_message(_,_), do: {:reply, "blah", "blah", :blah}
     end
 
-    error = catch_error(Module.create(BadRuleCommand, contents, Macro.Env.location(__ENV__)))
-    assert error.__struct__ == Spanner.GenCommand.ValidationError
-    assert String.starts_with?(error.message, "Defining a rule for command \"foo:my-command\", but this command is \"my-name\"!")
+    %ValidationError{message: message} = catch_error(Module.create(BadRuleCommand, contents, Macro.Env.location(__ENV__)))
+    assert String.starts_with?(message, "Rule for \"my-name\" references \"my-command\": \"when command is foo:my-command must have foo:foo\"")
   end
 
 

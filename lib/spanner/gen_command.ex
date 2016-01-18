@@ -45,11 +45,6 @@ defmodule Spanner.GenCommand do
   @opaque service_proxy() :: pid()
 
   @doc """
-  Start a command in the context of a bundle supervision tree.
-  """
-  @callback start_link() :: pid()
-
-  @doc """
   Initializes the callback module's internal state.
 
   If your command is stateless and requires no interaction with
@@ -68,57 +63,6 @@ defmodule Spanner.GenCommand do
                {:reply, message_bus_topic(), template(), command_response(), callback_state()} |
                {:noreply, callback_state()}
 
-  @doc "The name by which the command is referred to."
-  @callback command_name() :: String.t
-
-  @doc "The name of the bundle of which the command is a member."
-  @callback bundle_name() :: String.t
-
-  @doc """
-  Return all the invocation rules defined for a given command.
-
-  ## Example
-
-      > MyCommand.rules
-      [
-        "when command is my-command must have bundle:admin",
-        "when command is my-command with arg[0] == 'foo' must have bundle:read"
-      ]
-
-  """
-  @callback rules() :: [String.t]
-
-  @doc """
-  Return the names of the permissions that the command depends on.
-  """
-  @callback permissions() :: [String.t]
-
-  @doc """
-  Return descriptors for all the options a command declares.
-
-  ## Example
-
-      > CommandWithMultipleOptions.options
-      [
-        %{name: "option_1", type: "string", required: true},
-        %{name: "option_2", type: "boolean", required: false},
-        %{name: "option_3", type: "string", required: false}
-      ]
-
-  """
-  @callback options() :: [map()]
-
-
-  @doc """
-  Indicates whether a command should skip permission checks or not.
-  """
-  @callback enforcing?() :: boolean()
-
-  @doc """
-  Returns the calling convention of the command
-  """
-  @callback calling_convention() :: :all | :bound
-
   @doc """
   Returns `true` if `module` implements the
   `#{inspect __MODULE__}` behaviour.
@@ -135,6 +79,66 @@ defmodule Spanner.GenCommand do
     behaviours = Keyword.get(attributes, :behaviour, [])
     __MODULE__ in behaviours
   end
+
+  @doc """
+  Returns bundle name embedded in compiled command file
+  """
+  def bundle_name(module) do
+    attr_value(module, :bundle_name)
+  end
+
+  @doc """
+  Returns command name embedded in compiled command file
+  """
+  def command_name(module) do
+    attr_value(module, :command_name)
+  end
+
+  @doc """
+  Return descriptors for all the options a command declares.
+
+  ## Example
+
+      > CommandWithMultipleOptions.options
+      [
+        %{name: "option_1", type: "string", required: true},
+        %{name: "option_2", type: "boolean", required: false},
+        %{name: "option_3", type: "string", required: false}
+      ]
+
+  """
+  def options(module) do
+    attr_values(module, :options)
+  end
+
+  @doc """
+  Return permission rules compiled into the command file
+  """
+  def rules(module) do
+    attr_values(module, :rules)
+  end
+
+  @doc """
+  Return the names of the permissions that the command depends on.
+  """
+  def permissions(module) do
+    attr_values(module, :permissions)
+  end
+
+  @doc """
+  Indicates whether a command should skip permission checks or not.
+  """
+  def enforcing?(module) do
+    attr_value(module, :enforcing) == true
+  end
+
+  @doc """
+  Returns the calling convention of the command
+  """
+  def calling_convention(module) do
+    attr_value(module, :calling_convention)
+  end
+
 
   ########################################################################
   # Implementation
@@ -161,6 +165,8 @@ defmodule Spanner.GenCommand do
   defstruct [mq_conn: nil,
              cb_module: nil,
              cb_state: nil,
+             command_name: nil,
+             bundle_name: nil,
              topic: nil]
 
   @doc """
@@ -174,8 +180,10 @@ defmodule Spanner.GenCommand do
   * `args`: will be passed to `module.info/1` to generate callback
     state
   """
-  def start_link(module, args),
-    do: GenServer.start_link(__MODULE__, [module: module, args: args])
+  def start_link(bundle, command, module, args) do
+    GenServer.start_link(__MODULE__, [bundle: bundle, command: command,
+                                      module: module, args: args])
+  end
 
   @doc """
   Callback for the underlying `GenServer` implementation of
@@ -183,7 +191,7 @@ defmodule Spanner.GenCommand do
 
   """
   @spec init(Keyword.t) :: {:ok, Spanner.GenCommand.state} | {:error, term()}
-  def init([module: module, args: args]) do
+  def init([bundle: bundle, command: command, module: module, args: args]) do
     # Trap exits for if / when the message bus connection dies; see
     # handle_info/2 for more
     :erlang.process_flag(:trap_exit, true)
@@ -193,7 +201,8 @@ defmodule Spanner.GenCommand do
     case Carrier.Messaging.Connection.connect do
       {:ok, conn} ->
         {:ok, %Carrier.Credentials{id: relay_id}} = Carrier.CredentialManager.get()
-        [topic, reply_topic] = topics = [get_topic(module, relay_id), get_reply_topic(module, relay_id)]
+        [topic, reply_topic] = topics = [command_topic(bundle, command, relay_id),
+                                         command_reply_topic(bundle, command, relay_id)]
         for topic <- topics do
           Logger.debug("#{inspect module}: Command subscribing to #{topic}")
           Carrier.Messaging.Connection.subscribe(conn, topic)
@@ -235,7 +244,7 @@ defmodule Spanner.GenCommand do
         case cb_module.handle_message(req, state.cb_state) do
           {:reply, reply_to, template, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
-            bundle = cb_module.bundle_name()
+            bundle = bundle_name(cb_module)
             {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
           {:reply, reply_to, reply, cb_state} ->
             new_state = %{state | cb_state: cb_state}
@@ -278,10 +287,37 @@ defmodule Spanner.GenCommand do
 
   ########################################################################
 
-  defp get_topic(module, relay_id),
-    do: "/bot/commands/#{relay_id}/#{module.bundle_name()}/#{module.command_name()}"
+  defp command_topic(bundle_name, command_name, relay_id),
+    do: "/bot/commands/#{relay_id}/#{bundle_name}/#{command_name}"
 
-  defp get_reply_topic(module, relay_id),
-    do: "#{get_topic(module, relay_id)}/reply"
+  defp command_reply_topic(bundle_name, command_name, relay_id),
+    do: "#{command_topic(bundle_name, command_name, relay_id)}/reply"
 
+  defp attr_value(module, attr_name) do
+    if is_command?(module) do
+      attrs = module.__info__(:attributes)
+      case Keyword.get(attrs, attr_name) do
+        [value] ->
+          value
+        nil ->
+          nil
+      end
+    else
+      nil
+    end
+  end
+
+  defp attr_values(module, attr_name) do
+    if is_command?(module) do
+      attrs = module.__info__(:attributes)
+      case Keyword.get_values(attrs, attr_name) do
+        nil ->
+          nil
+        values ->
+          :lists.flatten(values)
+      end
+    else
+      nil
+    end
+  end
 end
