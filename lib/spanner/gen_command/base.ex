@@ -171,6 +171,7 @@ defmodule Spanner.GenCommand.Base do
     command_name = Keyword.get(opts, :name, default_name)
     enforcing = ensure_valid(opts, :enforcing, [true, false], true, command_name)
     calling_convention = Atom.to_string(ensure_valid(opts, :calling_convention, [:all, :bound], :bound, command_name))
+    execution = Atom.to_string(ensure_valid(opts, :execution, [:once, :multiple], :multiple, command_name))
 
     quote location: :keep do
       @behaviour Spanner.GenCommand
@@ -186,6 +187,7 @@ defmodule Spanner.GenCommand.Base do
       Module.register_attribute(__MODULE__, :rules, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :enforcing, accumulate: false, persist: true)
       Module.register_attribute(__MODULE__, :calling_convention, accumulate: false, persist: true)
+      Module.register_attribute(__MODULE__, :execution, accumulate: false, persist: true)
 
       import unquote(__MODULE__), only: [option: 1,
                                          option: 2,
@@ -196,6 +198,7 @@ defmodule Spanner.GenCommand.Base do
       @command_name unquote(command_name)
       @enforcing unquote(enforcing)
       @calling_convention unquote(calling_convention)
+      @execution unquote(execution)
 
       def init(_args, _service_proxy),
         do: {:ok, []}
@@ -270,6 +273,13 @@ defmodule Spanner.GenCommand.Base do
   """
   def calling_convention(module) do
     attr_value(module, :calling_convention)
+  end
+
+  @doc """
+  Return the execution method of the command
+  """
+  def execution(module) do
+    attr_value(module, :execution)
   end
 
 
