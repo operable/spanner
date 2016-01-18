@@ -122,7 +122,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_permissions(bundle_name, modules) do
     permissions = modules
     |> only_commands
-    |> Enum.map(&(GenCommand.permissions(&1)))
+    |> Enum.map(&(GenCommand.Base.permissions(&1)))
     |> Enum.map(&Enum.into(&1, HashSet.new))
     |> Enum.reduce(HashSet.new, &Set.union/2)
     |> Enum.map(&namespace_permission(bundle_name, &1))
@@ -138,7 +138,7 @@ defmodule Spanner.Bundle.Config do
   defp gen_rules(modules) do
     rules = modules
     |> only_commands
-    |> Enum.flat_map(&(GenCommand.rules(&1)))
+    |> Enum.flat_map(&(GenCommand.Base.rules(&1)))
     |> Enum.sort
 
     %{"rules" => rules}
@@ -169,18 +169,18 @@ defmodule Spanner.Bundle.Config do
   end
 
   defp only_commands(modules),
-    do: Enum.filter(modules, &GenCommand.is_command?/1)
+    do: Enum.filter(modules, &GenCommand.Base.used_base?/1)
 
   defp command_map!(module) when is_atom(module) do
     valid_module(module)
     |> command_map!
   end
   defp command_map!({:ok, module}) do
-    %{"name" => GenCommand.command_name(module),
-      "enforcing" => GenCommand.enforcing?(module),
-      "calling_convention" => GenCommand.calling_convention(module),
+    %{"name" => GenCommand.Base.command_name(module),
+      "enforcing" => GenCommand.Base.enforcing?(module),
+      "calling_convention" => GenCommand.Base.calling_convention(module),
       "version" => version(module),
-      "options" => GenCommand.options(module),
+      "options" => GenCommand.Base.options(module),
       "documentation" => case Code.get_docs(module, :moduledoc) do
                            {_line, doc} ->
                              # If a module doesn't have a module doc,
@@ -218,7 +218,7 @@ defmodule Spanner.Bundle.Config do
 
   defp mismatched_calling_convention?(module) do
     cond do
-      GenCommand.calling_convention(module) == :all && GenCommand.enforcing?(module) == true ->
+      GenCommand.Base.calling_convention(module) == :all && GenCommand.Base.enforcing?(module) == true ->
         true
       true ->
         false

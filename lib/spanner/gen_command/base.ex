@@ -1,5 +1,6 @@
 defmodule Spanner.GenCommand.Base do
   require Spanner.GenCommand.ValidationError
+  alias Spanner.GenCommand
   alias Piper.Permissions.Ast
 
   @moduledoc """
@@ -106,7 +107,7 @@ defmodule Spanner.GenCommand.Base do
       end
 
   These options can be inspected at runtime using
-  `GenCommand.options/1`.
+  `Spanner.GenCommand.Base.options/1`.
 
   ### Permissions
 
@@ -125,7 +126,7 @@ defmodule Spanner.GenCommand.Base do
 
       end
 
-  Permissions can be inspected at runtime using `GenCommand.permissions/1`.
+  Permissions can be inspected at runtime using `Spanner.GenCommand.Base.permissions/1`.
 
   ### Rules
 
@@ -157,7 +158,7 @@ defmodule Spanner.GenCommand.Base do
 
   If any rule is invalid, an error will be raised at compile time.
 
-  Rules can be inspected at runtime using `GenCommand.rules/1`.
+  Rules can be inspected at runtime using `Spanner.GenCommand.Base.rules/1`.
   """
 
   defmacro __using__(opts) do
@@ -176,6 +177,7 @@ defmodule Spanner.GenCommand.Base do
 
       require Spanner.GenCommand.ValidationError
 
+      Module.register_attribute(__MODULE__, :gen_command_base, accumuate: false, persist: true)
       Module.register_attribute(__MODULE__, :bundle_name, accumulate: false, persist: true)
       Module.register_attribute(__MODULE__, :command_name, accumulate: false, persist: true)
       Module.register_attribute(__MODULE__, :options, accumulate: true, persist: true)
@@ -189,7 +191,7 @@ defmodule Spanner.GenCommand.Base do
                                          option: 2,
                                          permission: 1,
                                          rule: 1]
-
+      @gen_command_base true
       @bundle_name unquote(bundle_name)
       @command_name unquote(command_name)
       @enforcing unquote(enforcing)
@@ -204,7 +206,74 @@ defmodule Spanner.GenCommand.Base do
     end
   end
 
-    @doc """
+  @doc """
+  Returns true if module `use`d Spanner.GenCommand.Base
+  """
+  def used_base?(module) do
+    attr_value(module, :gen_command_base) == true
+  end
+
+  @doc """
+  Returns bundle name embedded in compiled command file
+  """
+  def bundle_name(module) do
+    attr_value(module, :bundle_name)
+  end
+
+  @doc """
+  Returns command name embedded in compiled command file
+  """
+  def command_name(module) do
+    attr_value(module, :command_name)
+  end
+
+  @doc """
+  Return descriptors for all the options a command declares.
+
+  ## Example
+
+      > CommandWithMultipleOptions.options
+      [
+        %{name: "option_1", type: "string", required: true},
+        %{name: "option_2", type: "boolean", required: false},
+        %{name: "option_3", type: "string", required: false}
+      ]
+
+  """
+  def options(module) do
+    attr_values(module, :options)
+  end
+
+  @doc """
+  Return permission rules compiled into the command file
+  """
+  def rules(module) do
+    attr_values(module, :rules)
+  end
+
+  @doc """
+  Return the names of the permissions that the command depends on.
+  """
+  def permissions(module) do
+    attr_values(module, :permissions)
+  end
+
+  @doc """
+  Indicates whether a command should skip permission checks or not.
+  """
+  def enforcing?(module) do
+    attr_value(module, :enforcing) == true
+  end
+
+  @doc """
+  Returns the calling convention of the command
+  """
+  def calling_convention(module) do
+    attr_value(module, :calling_convention)
+  end
+
+
+  @doc """
   Declare an option that this command takes.
 
   This macro may be invoked multiple times, in which case all values
@@ -342,6 +411,34 @@ defmodule Spanner.GenCommand.Base do
       true ->
         raise ValidationError.new "Illegal option value for \"#{opt_name}\" in command \"#{command_name}\". " <>
         "Value must be one of #{inspect allowed} but found \"#{opt_value}\"."
+    end
+  end
+
+  defp attr_value(module, attr_name) do
+    if GenCommand.is_command?(module) do
+      attrs = module.__info__(:attributes)
+      case Keyword.get(attrs, attr_name) do
+        [value] ->
+          value
+        nil ->
+          nil
+      end
+    else
+      nil
+    end
+  end
+
+  defp attr_values(module, attr_name) do
+    if GenCommand.is_command?(module) do
+      attrs = module.__info__(:attributes)
+      case Keyword.get_values(attrs, attr_name) do
+        nil ->
+          nil
+        values ->
+          :lists.flatten(values)
+      end
+    else
+      nil
     end
   end
 
