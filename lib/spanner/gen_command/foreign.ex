@@ -33,28 +33,63 @@ defmodule Spanner.GenCommand.Foreign do
 
   @behaviour Spanner.GenCommand
 
+  # Do not inherit existing environment and start a restricted
+  # interactive shell
+  @foreign_shell "/usr/bin/env -i /bin/sh -i -r"
+
   defstruct [:bundle, :command, :executable,
-             :executable_args, :env_overlays, :runner_script]
+             :executable_args, :base_env, :env_overlays]
+
+  alias Porcelain.Process, as: Proc
 
   def init(args, _service_proxy) do
     {:ok, %__MODULE__{bundle:  Keyword.fetch!(args, :bundle),
                       command: Keyword.fetch!(args, :command),
                       executable: Keyword.fetch!(args, :executable),
-                      executable_args: Keyword.get(args, :executable_args, []),
-                      runner_script: runner_script_path()}}
+                      base_env: inspect_base_environment(),
+                      env_overlays: Keyword.get(args, :env, []),
+                      executable_args: Keyword.get(args, :executable_args, [])}}
   end
 
-  def handle_message(_request, _state) do
-  end
-
-  defp runner_script_path() do
-    script = Path.join([Application.app_dir(:spanner, "priv/scripts"), "invoke.sh"])
-    cond do
-      File.regular?(script) ->
-        script
-      true ->
-        raise RuntimeError, "Foreign command invoke script '#{script}' is missing"
+  def handle_message(_request, %__MODULE__{base_env: base}=state) do
+    proc = start_process(base)
+    try do
+      # Apply overlays
+      # Set request env vars
+      # Call executable w/args
+      # Read response
+    after
+      Process.stop(proc)
+      # Send command response
+      {:reply, "ok", state}
     end
+  end
+
+  defp inspect_base_environment do
+    user_env = System.get_env("USER")
+    home_env = System.get_env("HOME")
+    lang_env = System.get_env("LANG")
+    %{"USER" => user_env, "HOME" => home_env, "LANG" => lang_env}
+  end
+
+  defp start_process(base_vars) do
+    proc = Porcelain.spawn_shell(@foreign_shell, in: :receive, out: {:send, self()},
+                                 err: {:send, self()})
+    apply_vars(proc, base_vars)
+  end
+
+  defp apply_vars(proc, vars) do
+    Enum.each(vars, &set_env(proc, &1))
+    proc
+  end
+
+  defp set_env(proc, {name, value}) when is_atom(name) do
+    set_env(proc, {Atom.to_string(name), value})
+  end
+  defp set_env(proc, {name, value}) when is_binary(name) do
+    name = String.upcase(name)
+    value = "#{value}"
+    Proc.send_input(proc, "export #{name}=#{value}\n")
   end
 
 end
