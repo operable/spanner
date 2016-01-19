@@ -179,6 +179,7 @@ defmodule Spanner.Bundle.Config do
     %{"name" => GenCommand.Base.command_name(module),
       "enforcing" => GenCommand.Base.enforcing?(module),
       "calling_convention" => GenCommand.Base.calling_convention(module),
+      "execution" => GenCommand.Base.execution(module),
       "version" => version(module),
       "options" => GenCommand.Base.options(module),
       "documentation" => case Code.get_docs(module, :moduledoc) do
