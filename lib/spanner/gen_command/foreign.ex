@@ -51,7 +51,8 @@ defmodule Spanner.GenCommand.Foreign do
                       executable_args: Keyword.get(args, :executable_args, [])}}
   end
 
-  def handle_message(_request, %__MODULE__{base_env: base}=state) do
+  def handle_message(request, %__MODULE__{base_env: base}=state) do
+    IO.puts request.reply_to
     proc = start_process(base)
     try do
       # Apply overlays
@@ -59,7 +60,7 @@ defmodule Spanner.GenCommand.Foreign do
       # Call executable w/args
       # Read response
     after
-      Process.stop(proc)
+      Proc.stop(proc)
       # Send command response
       {:reply, "ok", state}
     end
