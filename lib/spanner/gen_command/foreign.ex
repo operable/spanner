@@ -27,7 +27,6 @@ defmodule Spanner.GenCommand.Foreign do
   * COG_BUNDLE="operable"
   * COG_COMMAND="my_script"
   * COG_USER="imbriaco"
-  * COG_INVOCATION="my_script --verbose --force --id=123 foo bar baz"
   * COG_PIPELINE_ID="374643c4-3f48-4e60-8c4f-671e3a11c06b"
   """
 
@@ -35,7 +34,9 @@ defmodule Spanner.GenCommand.Foreign do
 
   # Do not inherit existing environment and start a restricted
   # interactive shell
-  @foreign_shell "/usr/bin/env -i /bin/sh -i -r"
+  @foreign_shell "/usr/bin/env"
+  @foreign_shell_args ["-i", "/bin/sh", "-i"]
+  @output_timeout 1000
 
   defstruct [:bundle, :command, :executable,
              :executable_args, :base_env, :env_overlays]
@@ -51,18 +52,54 @@ defmodule Spanner.GenCommand.Foreign do
                       executable_args: Keyword.get(args, :executable_args, [])}}
   end
 
-  def handle_message(request, %__MODULE__{base_env: base}=state) do
-    IO.puts request.reply_to
+  def handle_message(request, %__MODULE__{executable: exe, base_env: base}=state) do
+    IO.puts "#{inspect request}"
     proc = start_process(base)
     try do
-      # Apply overlays
-      # Set request env vars
-      # Call executable w/args
-      # Read response
+      # TODO Apply overlays
+      calling_env = build_calling_env(request, state)
+      IO.puts "#{inspect calling_env}"
+      apply_vars(proc, calling_env)
+      Proc.send_input(proc, "#{exe}\n")
+      {out, err} = read_output(proc.pid)
+      Proc.await(proc, 10)
+      if err != "" do
+        {:reply, request.reply_to, err, state}
+      else
+        {:reply, request.reply_to, out, state}
+      end
     after
       Proc.stop(proc)
-      # Send command response
-      {:reply, "ok", state}
+    end
+  end
+
+  defp read_output(pid) do
+    read_output(pid, @output_timeout, "", "")
+  end
+
+  defp read_output(pid, output_timeout, out, err) do
+    receive do
+      {^pid, :data, :err, data} ->
+        err = err <> data
+        if err == "sh: no job control in this shell" do
+          read_output(pid, 5, out, "")
+        else
+          read_output(pid, 5, out, err)
+        end
+      {^pid, :data, :out, data} ->
+        read_output(pid, 5, out <> data, err)
+    after output_timeout ->
+        {out, err}
+    end
+  end
+
+  defp drain(proc) do
+    pid = proc.pid
+    receive do
+      {^pid, :data, _, _} ->
+        drain(proc)
+    after 0 ->
+        :ok
     end
   end
 
@@ -70,17 +107,20 @@ defmodule Spanner.GenCommand.Foreign do
     user_env = System.get_env("USER")
     home_env = System.get_env("HOME")
     lang_env = System.get_env("LANG")
-    %{"USER" => user_env, "HOME" => home_env, "LANG" => lang_env}
+    %{"USER" => user_env,
+      "HOME" => home_env,
+      "LANG" => lang_env}
   end
 
   defp start_process(base_vars) do
-    proc = Porcelain.spawn_shell(@foreign_shell, in: :receive, out: {:send, self()},
-                                 err: {:send, self()})
+    proc = Porcelain.spawn(@foreign_shell, @foreign_shell_args,
+                         in: :receive, out: {:send, self()})
     apply_vars(proc, base_vars)
   end
 
   defp apply_vars(proc, vars) do
     Enum.each(vars, &set_env(proc, &1))
+    drain(proc)
     proc
   end
 
@@ -90,7 +130,35 @@ defmodule Spanner.GenCommand.Foreign do
   defp set_env(proc, {name, value}) when is_binary(name) do
     name = String.upcase(name)
     value = "#{value}"
-    Proc.send_input(proc, "export #{name}=#{value}\n")
+    Proc.send_input(proc, "export #{name}=#{value} >& /dev/null\n")
+  end
+
+  defp build_calling_env(request, %__MODULE__{bundle: bundle, command: command}) do
+    %{"COG_BUNDLE" => bundle,
+      "COG_COMMAND" => command,
+      "COG_USER" => request.requestor["handle"]}
+    |> Map.merge(build_args_vars(request.args))
+    |> Map.merge(build_options_vars(request.options))
+  end
+
+  defp build_args_vars([]) do
+    %{"COG_ARGC" => "0"}
+  end
+  defp build_args_vars(args) do
+    acc = %{"COG_ARGC" => Integer.to_string(length(args))}
+    Enum.reduce(Enum.with_index(args, 1), acc,
+      fn({value, index}, acc) ->
+        Map.put(acc, "COG_ARGV_#{index}", "#{value}")
+      end)
+  end
+
+  defp build_options_vars(options) do
+    opt_names = Enum.join(Map.keys(options), ",")
+    acc = %{"COG_OPTS" => "\"#{opt_names}\""}
+    Enum.reduce(options, acc,
+      fn({key, value}, acc) ->
+        Map.put(acc, "COG_OPT_#{key}", "#{value}")
+      end)
   end
 
 end
