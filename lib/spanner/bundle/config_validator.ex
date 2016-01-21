@@ -1,12 +1,12 @@
-defmodule Spanner.Command.ConfigValidationError do
+defmodule Spanner.Bundle.ConfigValidationError do
   defexception message: nil, reason: nil, field: nil
 end
 
-defmodule Spanner.Command.ConfigValidator do
+defmodule Spanner.Bundle.ConfigValidator do
 
   use Spanner.JsonNavigator
 
-  alias Spanner.Command.ConfigValidationError, as: ValidationError
+  alias Spanner.Bundle.ConfigValidationError, as: ValidationError
 
   def validate(config) when is_binary(config) do
     case Poison.decode(config) do

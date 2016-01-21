@@ -1,7 +1,7 @@
-defmodule Spanner.Command.ValidatorTest do
+defmodule Spanner.Bundle.ValidatorTest do
 
-  alias Spanner.Command.ConfigValidator
-  alias Spanner.Command.ConfigValiationError
+  alias Spanner.Bundle.ConfigValidator
+  alias Spanner.Bundle.ConfigValiationError
 
   use ExUnit.Case, async: true
 

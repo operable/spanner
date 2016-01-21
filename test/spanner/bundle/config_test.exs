@@ -54,7 +54,8 @@ defmodule Spanner.Bundle.Config.Test do
                                            UnboundCommand,
                                            ExecutionOnceCommand,
                                            NeitherCommandNorService], ".")
-    assert %{"bundle" => %{"name" => "testing"},
+    assert %{"bundle" => %{"name" => "testing",
+                           "type" => "elixir"},
              "commands" => [%{"name" => "command-without-options",
                               "documentation" => nil,
                               "version" => "0.0.1",
@@ -109,7 +110,7 @@ defmodule Spanner.Bundle.Config.Test do
   # TODO: Should this be allowed?
   test "creates a config when there are no commands, services, permissions, or rules" do
     config = Config.gen_config("testing", [NeitherCommandNorService], ".")
-    assert %{"bundle" => %{"name" => "testing"},
+    assert %{"bundle" => %{"name" => "testing", "type" => "elixir"},
              "commands" => [],
              "permissions" => [],
              "rules" => [],
