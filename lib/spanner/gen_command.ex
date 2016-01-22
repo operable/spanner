@@ -162,7 +162,8 @@ defmodule Spanner.GenCommand do
         args = [{:bundle, bundle}, {:command, command}|args]
         case module.init(args, service_proxy) do
           {:ok, state} ->
-            {:ok, %__MODULE__{mq_conn: conn,
+            {:ok, %__MODULE__{bundle_name: bundle,
+                              mq_conn: conn,
                               cb_module: module,
                               cb_state: state,
                               topic: topic}}
