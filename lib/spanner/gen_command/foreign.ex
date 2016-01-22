@@ -39,82 +39,82 @@ defmodule Spanner.GenCommand.Foreign do
   @output_timeout 1000
 
   defstruct [:bundle, :command, :executable,
-             :executable_args, :base_env, :env_overlays]
+             :executable_args, :base_env, :errors]
 
+  alias Spanner.GenCommand.Foreign.ErrorHandler
   alias Porcelain.Process, as: Proc
 
   def init(args, _service_proxy) do
+    {:ok, pid} = ErrorHandler.start_link()
+    env_overlays = Keyword.get(args, :env, %{})
     {:ok, %__MODULE__{bundle:  Keyword.fetch!(args, :bundle),
                       command: Keyword.fetch!(args, :command),
                       executable: Keyword.fetch!(args, :executable),
-                      base_env: inspect_base_environment(),
-                      env_overlays: Keyword.get(args, :env, []),
-                      executable_args: Keyword.get(args, :executable_args, [])}}
+                      base_env: build_base_environment(env_overlays),
+                      executable_args: Keyword.get(args, :executable_args, []),
+                      errors: pid}}
   end
 
-  def handle_message(request, %__MODULE__{executable: exe, base_env: base}=state) do
-    IO.puts "#{inspect request}"
-    proc = start_process(base)
-    try do
-      # TODO Apply overlays
-      calling_env = build_calling_env(request, state)
-      IO.puts "#{inspect calling_env}"
-      apply_vars(proc, calling_env)
-      Proc.send_input(proc, "#{exe}\n")
-      {out, err} = read_output(proc.pid)
-      Proc.await(proc, 10)
-      if err != "" do
-        {:reply, request.reply_to, err, state}
-      else
-        {:reply, request.reply_to, out, state}
-      end
-    after
-      Proc.stop(proc)
+  def handle_message(request, %__MODULE__{executable: exe, base_env: base, errors: handler}=state) do
+    proc = start_process(base, handler)
+    calling_env = build_calling_env(request, state)
+    apply_vars(proc, calling_env)
+    Proc.send_input(proc, "#{exe}\nexit $?\n")
+    err = ErrorHandler.get_errors(handler)
+    if err == "" do
+      out = read_output(proc.pid)
+      {:reply, request.reply_to, out, state}
+    else
+      {:reply, request.reply_to, err, state}
     end
   end
 
   defp read_output(pid) do
-    read_output(pid, @output_timeout, "", "")
+    receive do
+      {^pid, :data, :out, data} ->
+        read_remaining_output(pid, data)
+    after @output_timeout ->
+        "No output"
+    end
   end
 
-  defp read_output(pid, output_timeout, out, err) do
+  defp read_remaining_output(pid, accum) do
     receive do
-      {^pid, :data, :err, data} ->
-        err = err <> data
-        if err == "sh: no job control in this shell" do
-          read_output(pid, 5, out, "")
-        else
-          read_output(pid, 5, out, err)
-        end
       {^pid, :data, :out, data} ->
-        read_output(pid, 5, out <> data, err)
-    after output_timeout ->
-        {out, err}
+        read_remaining_output(pid, accum <> data)
+    after 0 ->
+        accum
     end
   end
 
   defp drain(proc) do
     pid = proc.pid
     receive do
-      {^pid, :data, _, _} ->
+      {^pid, :data, _, data} ->
+        IO.puts "Drained #{data}"
         drain(proc)
-    after 0 ->
+    after 1 ->
         :ok
     end
   end
 
-  defp inspect_base_environment do
+  defp build_base_environment(overlays) do
     user_env = System.get_env("USER")
     home_env = System.get_env("HOME")
     lang_env = System.get_env("LANG")
-    %{"USER" => user_env,
-      "HOME" => home_env,
-      "LANG" => lang_env}
+    base = %{"USER" => user_env,
+             "HOME" => home_env,
+             "LANG" => lang_env}
+    updated = overlays
+    |> Enum.map(fn({key, value}) -> {String.upcase(key), value} end)
+    |> :maps.from_list
+    Map.merge(base, updated)
   end
 
-  defp start_process(base_vars) do
+  defp start_process(base_vars, errors) do
     proc = Porcelain.spawn(@foreign_shell, @foreign_shell_args,
-                         in: :receive, out: {:send, self()})
+                           in: :receive, out: {:send, self()}, err: {:send, errors})
+    ErrorHandler.prepare(errors, proc)
     apply_vars(proc, base_vars)
   end
 
@@ -130,12 +130,13 @@ defmodule Spanner.GenCommand.Foreign do
   defp set_env(proc, {name, value}) when is_binary(name) do
     name = String.upcase(name)
     value = "#{value}"
-    Proc.send_input(proc, "export #{name}=#{value} >& /dev/null\n")
+    Proc.send_input(proc, "export #{name}=#{value}\n")
   end
 
   defp build_calling_env(request, %__MODULE__{bundle: bundle, command: command}) do
     %{"COG_BUNDLE" => bundle,
       "COG_COMMAND" => command,
+      "COG_PIPELINE_ID" => get_pipeline_id(request),
       "COG_USER" => request.requestor["handle"]}
     |> Map.merge(build_args_vars(request.args))
     |> Map.merge(build_options_vars(request.options))
@@ -159,6 +160,12 @@ defmodule Spanner.GenCommand.Foreign do
       fn({key, value}, acc) ->
         Map.put(acc, "COG_OPT_#{key}", "#{value}")
       end)
+  end
+
+  defp get_pipeline_id(request) do
+    request.reply_to
+    |> String.split("/")
+    |> Enum.at(3)
   end
 
 end
