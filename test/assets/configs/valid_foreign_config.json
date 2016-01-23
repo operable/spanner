@@ -1,24 +1,5 @@
 {
-  "templates": [
-    {
-      "source": "{{#.}}\n  {{title}}\n  {{url}}\n  ```{{body}}```\n{{/.}}\n",
-      "path": "templates/slack/pr.mustache",
-      "name": "pr",
-      "adapter": "slack"
-    },
-    {
-      "source": "{{#.}}\n  {{title}}\n  {{url}}\n  ```{{body}}```\n{{/.}}\n",
-      "path": "templates/slack/prs.mustache",
-      "name": "prs",
-      "adapter": "slack"
-    },
-    {
-      "source": "{{#.}}\n  {{name}} {{#parent}}(forked from {{name}}){{/parent}}\n  {{html_url}}\n{{/.}}\n",
-      "path": "templates/slack/repo.mustache",
-      "name": "repo",
-      "adapter": "slack"
-    }
-  ],
+  "templates": [],
   "permissions": [],
   "rules": [],
   "commands": [
