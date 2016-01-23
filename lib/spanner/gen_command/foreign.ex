@@ -26,7 +26,7 @@ defmodule Spanner.GenCommand.Foreign do
 
   * COG_BUNDLE="operable"
   * COG_COMMAND="my_script"
-  * COG_USER="imbriaco"
+  * COG_CHAT_HANDLE="imbriaco"
   * COG_PIPELINE_ID="374643c4-3f48-4e60-8c4f-671e3a11c06b"
   """
 
@@ -94,7 +94,7 @@ defmodule Spanner.GenCommand.Foreign do
     %{"COG_BUNDLE" => bundle,
       "COG_COMMAND" => command,
       "COG_PIPELINE_ID" => get_pipeline_id(request),
-      "COG_USER" => request.requestor["handle"]}
+      "COG_CHAT_HANDLE" => request.requestor["handle"]}
     |> Map.merge(build_args_vars(request.args))
     |> Map.merge(build_options_vars(request.options))
   end
