@@ -114,7 +114,8 @@ defmodule Spanner.Bundle.Config do
 
   # Generate top-level bundle configuration
   defp gen_bundle(name) do
-    %{"bundle" => %{"name" => name}}
+    %{"bundle" => %{"name" => name,
+                    "type" => "elixir"}}
   end
 
   # Generate the union of all permissions required by commands in the
