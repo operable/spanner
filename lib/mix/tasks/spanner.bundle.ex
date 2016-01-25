@@ -60,7 +60,7 @@ defmodule Mix.Tasks.Spanner.Bundle do
   end
 
   defp bundle_name(project),
-    do: "#{project}.#{Spanner.bundle_extension()}"
+    do: "#{project}#{Spanner.bundle_extension()}"
 
   # Generate the directory structure for the bundle, rooted in the
   # system's temporary directory. We remove any previously-existing
