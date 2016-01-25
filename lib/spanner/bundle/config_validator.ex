@@ -51,6 +51,7 @@ defmodule Spanner.Bundle.ConfigValidator do
     validate_common_command_fields!(cmd)
     JsonNavigator.get!(cmd, [{"executable", :string}])
     JsonNavigator.get!(cmd, [{"env_vars", :array}])
+    validate_optional_attributes!(cmd, [{"preinstall", :string}, {"postinstall", :string}])
     validate_commands!("foreign", t)
   end
   defp validate_commands!("elixir", [cmd|t]) do
@@ -70,5 +71,20 @@ defmodule Spanner.Bundle.ConfigValidator do
     else
       :ok
     end
+  end
+
+  defp validate_optional_attributes!(_json, []) do
+    :ok
+  end
+  defp validate_optional_attributes!(json, [attr|t]) do
+    try do
+      JsonNavigator.get!(json, [attr])
+    rescue
+      e in JsonNavigationError ->
+        if e.reason != :missing_key do
+          raise ValidationError, field: e.field, reason: e.reason, message: e.message
+        end
+    end
+    validate_optional_attributes!(json, t)
   end
 end
