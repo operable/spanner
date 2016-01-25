@@ -28,14 +28,14 @@ defmodule Spanner.Bundle.ValidatorTest do
     assert validate("valid_foreign_config") == :ok
   end
 
-  test "raises on bad postinstall attribute" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_postinstall") end)
+  test "raises on bad uninstall attribute" do
+    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_uninstall") end)
     assert error.reason == :wrong_type
     assert error.field == "uninstall"
   end
 
-  test "raises on bad preinstall attribute" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_preinstall") end)
+  test "raises on bad install attribute" do
+    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_install") end)
     assert error.reason == :wrong_type
     assert error.field == "install"
   end
