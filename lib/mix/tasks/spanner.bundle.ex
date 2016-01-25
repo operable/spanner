@@ -2,19 +2,17 @@ defmodule Mix.Tasks.Spanner.Bundle do
   use Mix.Task
   alias Spanner.Bundle.Manifest
 
-  @bundle_extension "loop"
-
   @shortdoc "Generate a Spanner command bundle from this project"
   @moduledoc """
   #{@shortdoc}
 
-  A bundle is a ZIP file with the extension `#{@bundle_extension}`
+  A bundle is a ZIP file with the extension `#{Spanner.bundle_extension()}`
   that contains the compiled Elixir BEAM files for the commands and
   services, as well as metadata files describing the bundle.
 
   """
 
-  @work_dir_name "loop_bundle_working_directory"
+  @work_dir_name "cog_bundle_working_directory"
   def run(_args) do
 
     # Ensure there are BEAM files to collect!
@@ -62,7 +60,7 @@ defmodule Mix.Tasks.Spanner.Bundle do
   end
 
   defp bundle_name(project),
-    do: "#{project}.#{@bundle_extension}"
+    do: "#{project}.#{Spanner.bundle_extension()}"
 
   # Generate the directory structure for the bundle, rooted in the
   # system's temporary directory. We remove any previously-existing
