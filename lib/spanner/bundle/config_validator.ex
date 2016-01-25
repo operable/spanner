@@ -42,6 +42,7 @@ defmodule Spanner.Bundle.ConfigValidator do
     JsonNavigator.get!(json, [{"permissions", :array}])
     JsonNavigator.get!(json, [{"rules", :array}])
     JsonNavigator.get!(json, [{"templates", :array}])
+    validate_optional_attributes!(json["bundle"], [{"install", :string}, {"uninstall", :string}])
     commands = JsonNavigator.get!(json, [{"commands", :array}])
     validate_commands!(btype, commands)
   end
@@ -51,7 +52,6 @@ defmodule Spanner.Bundle.ConfigValidator do
     validate_common_command_fields!(cmd)
     JsonNavigator.get!(cmd, [{"executable", :string}])
     JsonNavigator.get!(cmd, [{"env_vars", :array}])
-    validate_optional_attributes!(cmd, [{"install", :string}, {"uninstall", :string}])
     validate_commands!("foreign", t)
   end
   defp validate_commands!("elixir", [cmd|t]) do

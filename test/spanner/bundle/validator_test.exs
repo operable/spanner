@@ -31,13 +31,13 @@ defmodule Spanner.Bundle.ValidatorTest do
   test "raises on bad postinstall attribute" do
     error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_postinstall") end)
     assert error.reason == :wrong_type
-    assert error.field == "postinstall"
+    assert error.field == "uninstall"
   end
 
   test "raises on bad preinstall attribute" do
     error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_preinstall") end)
     assert error.reason == :wrong_type
-    assert error.field == "preinstall"
+    assert error.field == "install"
   end
 
 end
