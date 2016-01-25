@@ -12,7 +12,7 @@ defmodule Mix.Tasks.Spanner.Bundle do
 
   """
 
-  @work_dir_name "cog_bundle_working_directory"
+  @work_dir_name "bundle_working_directory"
   def run(_args) do
 
     # Ensure there are BEAM files to collect!
