@@ -42,6 +42,7 @@ defmodule Spanner.Bundle.ConfigValidator do
     JsonNavigator.get!(json, [{"permissions", :array}])
     JsonNavigator.get!(json, [{"rules", :array}])
     JsonNavigator.get!(json, [{"templates", :array}])
+    validate_optional_attributes!(json["bundle"], [{"install", :string}, {"uninstall", :string}])
     commands = JsonNavigator.get!(json, [{"commands", :array}])
     validate_commands!(btype, commands)
   end
@@ -70,5 +71,20 @@ defmodule Spanner.Bundle.ConfigValidator do
     else
       :ok
     end
+  end
+
+  defp validate_optional_attributes!(_json, []) do
+    :ok
+  end
+  defp validate_optional_attributes!(json, [attr|t]) do
+    try do
+      JsonNavigator.get!(json, [attr])
+    rescue
+      e in JsonNavigationError ->
+        if e.reason != :missing_key do
+          raise ValidationError, field: e.field, reason: e.reason, message: e.message
+        end
+    end
+    validate_optional_attributes!(json, t)
   end
 end
