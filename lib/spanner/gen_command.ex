@@ -181,17 +181,9 @@ defmodule Spanner.GenCommand do
                   %__MODULE__{topic: topic, cb_module: cb_module, bundle_name: bundle}=state) do
     case Carrier.CredentialManager.verify_signed_message(message) do
       {true, payload} ->
-        req = Command.Request.decode!(payload)
-        case cb_module.handle_message(req, state.cb_state) do
-          {:reply, reply_to, template, reply, cb_state} ->
-            new_state = %{state | cb_state: cb_state}
-            {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
-          {:reply, reply_to, reply, cb_state} ->
-            new_state = %{state | cb_state: cb_state}
-            {:noreply, send_ok_reply(reply, reply_to, new_state)}
-          {:noreply, cb_state} ->
-            new_state = %{state | cb_state: cb_state}
-            {:noreply, new_state}
+        case Command.Request.decode(payload) do
+          {:ok, req} -> handle_info_message(req, cb_module, bundle, state)
+          {:error, error} -> {:noreply, send_ok_reply(error, payload.reply_to, state)}
         end
       false ->
         Logger.error("Message signature not verified! #{inspect message}")
@@ -210,6 +202,20 @@ defmodule Spanner.GenCommand do
     do: {:noreply, state}
 
   ########################################################################
+
+  defp handle_info_message(req, cb_module, bundle, state) do
+    case cb_module.handle_message(req, state.cb_state) do
+      {:reply, reply_to, template, reply, cb_state} ->
+        new_state = %{state | cb_state: cb_state}
+        {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
+      {:reply, reply_to, reply, cb_state} ->
+        new_state = %{state | cb_state: cb_state}
+        {:noreply, send_ok_reply(reply, reply_to, new_state)}
+      {:noreply, cb_state} ->
+        new_state = %{state | cb_state: cb_state}
+        {:noreply, new_state}
+    end
+  end
 
   defp send_ok_reply(reply, {bundle, template}, reply_to, state) when is_map(reply) or is_list(reply) do
     resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply, bundle: bundle, template: template})
