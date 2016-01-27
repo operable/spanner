@@ -19,9 +19,14 @@ defmodule Spanner.Command.Request do
   end
 
   defp populate_config(request) do
-    case get_config(request) do
-      {:ok, command_config} -> {:ok, %{request | command_config: command_config}}
-      error -> error
+    [bundle, _cmd] = String.split(request.command, ":")
+    if bundle == "operable" do
+      {:ok, request}
+    else
+      case get_config(request) do
+        {:ok, command_config} -> {:ok, %{request | command_config: command_config}}
+        error -> error
+      end
     end
   end
 
@@ -47,16 +52,16 @@ defmodule Spanner.Command.Request do
   end
 
   defp open_config(request) do
-    config_path = Application.get_env(:cog, :command_config_root)
+    config_path = Application.get_env(:spanner, :command_config_root)
     case config_path do
-      nil -> {:error, "Please set environment variable 'COG_COMMAND_CONFIG_ROOT' to a valid location and ensure that the necessary command config files exists in that location."}
+      nil -> {:error, "Please set environment variable 'COG_COMMAND_CONFIG_ROOT' to a valid location and ensure that the necessary command config files exist in that location."}
       _ -> read_config(request, config_path)
     end
   end
 
   defp read_config(request, config_path) do
-    [ns, _cmd] = String.split(request.command, ":")
-    cmd_config_file = Path.join([config_path, ns, "config.json"])
+    [bundle, _cmd] = String.split(request.command, ":")
+    cmd_config_file = Path.join([config_path, bundle, "config.json"])
     case File.exists?(cmd_config_file) do
       true ->
         File.open(cmd_config_file, [:read], fn(file) ->
