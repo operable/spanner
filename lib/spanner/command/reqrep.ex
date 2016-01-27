@@ -21,14 +21,9 @@ defmodule Spanner.Command.Request do
   end
 
   defp populate_config(request) do
-    [bundle, _cmd] = String.split(request.command, ":")
-    if bundle == "operable" do
-      {:ok, request}
-    else
-      case get_config(request) do
-        {:ok, command_config} -> {:ok, %{request | command_config: command_config}}
-        error -> error
-      end
+    case get_config(request) do
+      {:ok, command_config} -> {:ok, %{request | command_config: command_config}}
+      error -> error
     end
   end
 
@@ -54,8 +49,7 @@ defmodule Spanner.Command.Request do
   end
 
   defp open_config(request) do
-    config_path = Application.get_env(:spanner, :command_config_root)
-    case config_path do
+    case Application.get_env(:spanner, :command_config_root) do
       nil -> {:ok, ""}
       path -> read_config(request, path)
     end
