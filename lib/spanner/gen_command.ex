@@ -182,8 +182,10 @@ defmodule Spanner.GenCommand do
     case Carrier.CredentialManager.verify_signed_message(message) do
       {true, payload} ->
         case Command.Request.decode(payload) do
-          {:ok, req} -> handle_info_message(req, cb_module, bundle, state)
-          {:error, error} -> {:noreply, send_ok_reply(error, payload.reply_to, state)}
+          {:ok, req} ->
+            handle_info_message(req, cb_module, bundle, state)
+          {:error, error} ->
+            {:noreply, send_error_reply(error, payload["reply_to"], state)}
         end
       false ->
         Logger.error("Message signature not verified! #{inspect message}")
@@ -216,6 +218,18 @@ defmodule Spanner.GenCommand do
         {:noreply, new_state}
     end
   end
+
+  ########################################################################
+
+  defp send_error_reply(reply, reply_to, state) when is_map(reply) or is_list(reply) do
+    resp = Command.Response.encode!(%Command.Response{status: :error, body: reply})
+    Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
+    state
+  end
+  defp send_error_reply(reply, reply_to, state),
+    do: send_error_reply(%{body: [reply]}, reply_to, state)
+
+  ########################################################################
 
   defp send_ok_reply(reply, {bundle, template}, reply_to, state) when is_map(reply) or is_list(reply) do
     resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply, bundle: bundle, template: template})
