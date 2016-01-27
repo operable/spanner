@@ -57,7 +57,7 @@ defmodule Spanner.Command.Request do
     config_path = Application.get_env(:spanner, :command_config_root)
     case config_path do
       nil -> {:ok, ""}
-      path -> read_config(request, config_path)
+      path -> read_config(request, path)
     end
   end
 
