@@ -2,6 +2,8 @@ defmodule Spanner.Command.Request do
 
   use Spanner.Marshalled
 
+  require Logger
+
   defmarshalled [:room, :requestor, :command, :args, :options, :command_config, :reply_to, :cog_env]
 
   defp validate(request) do
