@@ -181,17 +181,11 @@ defmodule Spanner.GenCommand do
                   %__MODULE__{topic: topic, cb_module: cb_module, bundle_name: bundle}=state) do
     case Carrier.CredentialManager.verify_signed_message(message) do
       {true, payload} ->
-        req = Command.Request.decode!(payload)
-        case cb_module.handle_message(req, state.cb_state) do
-          {:reply, reply_to, template, reply, cb_state} ->
-            new_state = %{state | cb_state: cb_state}
-            {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
-          {:reply, reply_to, reply, cb_state} ->
-            new_state = %{state | cb_state: cb_state}
-            {:noreply, send_ok_reply(reply, reply_to, new_state)}
-          {:noreply, cb_state} ->
-            new_state = %{state | cb_state: cb_state}
-            {:noreply, new_state}
+        case Command.Request.decode(payload) do
+          {:ok, req} ->
+            process_message(req, cb_module, bundle, state)
+          {:error, error} ->
+            {:noreply, send_error_reply(error, payload["reply_to"], state)}
         end
       false ->
         Logger.error("Message signature not verified! #{inspect message}")
@@ -208,6 +202,32 @@ defmodule Spanner.GenCommand do
   end
   def handle_info(_, state),
     do: {:noreply, state}
+
+  ########################################################################
+
+  defp process_message(req, cb_module, bundle, state) do
+    case cb_module.handle_message(req, state.cb_state) do
+      {:reply, reply_to, template, reply, cb_state} ->
+        new_state = %{state | cb_state: cb_state}
+        {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
+      {:reply, reply_to, reply, cb_state} ->
+        new_state = %{state | cb_state: cb_state}
+        {:noreply, send_ok_reply(reply, reply_to, new_state)}
+      {:noreply, cb_state} ->
+        new_state = %{state | cb_state: cb_state}
+        {:noreply, new_state}
+    end
+  end
+
+  ########################################################################
+
+  defp send_error_reply(reply, reply_to, state) when is_map(reply) or is_list(reply) do
+    resp = Command.Response.encode!(%Command.Response{status: :error, body: reply})
+    Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
+    state
+  end
+  defp send_error_reply(reply, reply_to, state),
+    do: send_error_reply(%{body: [reply]}, reply_to, state)
 
   ########################################################################
 

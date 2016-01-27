@@ -68,6 +68,20 @@ defmodule Spanner.Marshalled do
             raise Spanner.DecodeError, [message: inspect(reason), json: data]
         end
       end
+      def decode(data) do
+        populated = Enum.reduce(@field_mappings, %__MODULE__{},
+          fn({dname, sname}, accum) ->
+            Map.put(accum, sname, Map.get(data, dname))
+          end)
+        case validate(populated) do
+          {:ok, populated} ->
+            {:ok, populated}
+          {:error, {:empty_field, field}} ->
+            {:error, %{message: "#{__MODULE__}.#{field} is empty", json: data}}
+          {:error, reason} ->
+            {:error, %{message: inspect(reason), json: data}}
+        end
+      end
     end
   end
 
