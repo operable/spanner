@@ -183,7 +183,7 @@ defmodule Spanner.GenCommand do
       {true, payload} ->
         case Command.Request.decode(payload) do
           {:ok, req} ->
-            handle_info_message(req, cb_module, bundle, state)
+            process_message(req, cb_module, bundle, state)
           {:error, error} ->
             {:noreply, send_error_reply(error, payload["reply_to"], state)}
         end
@@ -205,7 +205,7 @@ defmodule Spanner.GenCommand do
 
   ########################################################################
 
-  defp handle_info_message(req, cb_module, bundle, state) do
+  defp process_message(req, cb_module, bundle, state) do
     case cb_module.handle_message(req, state.cb_state) do
       {:reply, reply_to, template, reply, cb_state} ->
         new_state = %{state | cb_state: cb_state}
