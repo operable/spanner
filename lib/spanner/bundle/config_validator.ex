@@ -51,7 +51,7 @@ defmodule Spanner.Bundle.ConfigValidator do
   defp validate_commands!("foreign", [cmd|t]) do
     validate_common_command_fields!(cmd)
     JsonNavigator.get!(cmd, [{"executable", :string}])
-    JsonNavigator.get!(cmd, [{"env_vars", :array}])
+    JsonNavigator.get!(cmd, [{"env_vars", :map}])
     validate_commands!("foreign", t)
   end
   defp validate_commands!("elixir", [cmd|t]) do
