@@ -56,8 +56,8 @@ defmodule Spanner.Command.Request do
   defp open_config(request) do
     config_path = Application.get_env(:spanner, :command_config_root)
     case config_path do
-      nil -> {:error, "Please set environment variable 'COG_COMMAND_CONFIG_ROOT' to a valid location and ensure that the necessary command config files exist in that location."}
-      _ -> read_config(request, config_path)
+      nil -> {:ok, ""}
+      path -> read_config(request, config_path)
     end
   end
 
