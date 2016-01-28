@@ -13,7 +13,7 @@
         }
       ],
       "name": "date",
-      "env_vars": [],
+      "env_vars": {"SERVICE_USER": "testing"},
       "executable": "/bin/date",
       "enforcing": false,
       "calling_convention": "bound",
