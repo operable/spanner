@@ -35,21 +35,22 @@ defmodule Spanner.GenCommand.Foreign do
   # Keep these env vars from the runtime environment
   @propagated_vars ["HOME", "LANG", "USER"]
 
-  defstruct [:bundle, :command, :executable,
+  defstruct [:bundle, :bundle_dir, :command, :executable,
              :executable_args, :base_env]
 
   def init(args, _service_proxy) do
     env_overlays = Keyword.get(args, :env, %{})
     {:ok, %__MODULE__{bundle:  Keyword.fetch!(args, :bundle),
+                      bundle_dir: Keyword.fetch!(args, :bundle_dir),
                       command: Keyword.fetch!(args, :command),
                       executable: Keyword.fetch!(args, :executable),
                       base_env: build_base_environment(env_overlays),
                       executable_args: Keyword.get(args, :executable_args, [])}}
   end
 
-  def handle_message(request, %__MODULE__{executable: exe, base_env: base}=state) do
+  def handle_message(request, %__MODULE__{executable: exe, bundle_dir: bundle_dir, base_env: base}=state) do
     calling_env = Map.to_list(Map.merge(base, build_calling_env(request, state)))
-    result = Porcelain.exec(exe, [], out: :string, err: :string, env: calling_env)
+    result = Porcelain.exec(exe, [], out: :string, err: :string, dir: bundle_dir, env: calling_env)
     send_reply(request, result, state)
   end
 
