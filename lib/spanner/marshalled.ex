@@ -78,6 +78,8 @@ defmodule Spanner.Marshalled do
             {:ok, populated}
           {:error, {:empty_field, field}} ->
             {:error, %{message: "#{__MODULE__}.#{field} is empty", json: data}}
+          {:error, reason} when is_bitstring(reason) ->
+            {:error, %{message: reason, json: data}}
           {:error, reason} ->
             {:error, %{message: inspect(reason), json: data}}
         end
