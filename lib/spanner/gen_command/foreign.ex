@@ -35,21 +35,25 @@ defmodule Spanner.GenCommand.Foreign do
   # Keep these env vars from the runtime environment
   @propagated_vars ["HOME", "LANG", "USER"]
 
-  defstruct [:bundle, :command, :executable,
+  @json_format "JSON\n"
+  @json_format_length String.length(@json_format)
+
+  defstruct [:bundle, :bundle_dir, :command, :executable,
              :executable_args, :base_env]
 
   def init(args, _service_proxy) do
     env_overlays = Keyword.get(args, :env, %{})
     {:ok, %__MODULE__{bundle:  Keyword.fetch!(args, :bundle),
+                      bundle_dir: Keyword.fetch!(args, :bundle_dir),
                       command: Keyword.fetch!(args, :command),
                       executable: Keyword.fetch!(args, :executable),
                       base_env: build_base_environment(env_overlays),
                       executable_args: Keyword.get(args, :executable_args, [])}}
   end
 
-  def handle_message(request, %__MODULE__{executable: exe, base_env: base}=state) do
+  def handle_message(request, %__MODULE__{executable: exe, bundle_dir: bundle_dir, base_env: base}=state) do
     calling_env = Map.to_list(Map.merge(base, build_calling_env(request, state)))
-    result = Porcelain.exec(exe, [], out: :string, err: :string, env: calling_env)
+    result = Porcelain.exec(exe, [], out: :string, err: :string, dir: bundle_dir, env: calling_env)
     send_reply(request, result, state)
   end
 
@@ -70,11 +74,26 @@ defmodule Spanner.GenCommand.Foreign do
   defp parse_output(text) do
     case Regex.run(~r/^COG_TEMPLATE: ([a-zA-Z0-9_\.])+\n/, text, capture: :first) do
       nil ->
-        text
+        parse_content(text)
       [raw_template_name] ->
         {_, content} = String.split_at(text, String.length(raw_template_name))
         [_, template_name] = String.split(raw_template_name, ": ")
-        {String.strip(template_name), String.strip(content)}
+        {String.strip(template_name), parse_content(content)}
+    end
+  end
+
+  defp parse_content(text) do
+    text = String.strip(text)
+    if String.starts_with?(text, @json_format) do
+      raw_json = String.slice(text, @json_format_length..(String.length(text)))
+      case Poison.decode(raw_json) do
+        {:ok, json} ->
+          json
+        _error ->
+          "Command returned invalid json: #{inspect raw_json}"
+      end
+    else
+      text
     end
   end
 
@@ -115,7 +134,7 @@ defmodule Spanner.GenCommand.Foreign do
     acc = %{"COG_OPTS" => "\"#{opt_names}\""}
     Enum.reduce(options, acc,
       fn({key, value}, acc) ->
-        Map.put(acc, "COG_OPT_#{key}", "#{value}")
+        Map.put(acc, "COG_OPT_#{String.upcase(key)}", "#{value}")
       end)
   end
 
