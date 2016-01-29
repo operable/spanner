@@ -35,6 +35,9 @@ defmodule Spanner.GenCommand.Foreign do
   # Keep these env vars from the runtime environment
   @propagated_vars ["HOME", "LANG", "USER"]
 
+  # Reserve these environment keys prefixes and disallow injectable config for them
+  @reserved_env_prefixes ["COG_"]
+
   @json_format "JSON\n"
   @json_format_length String.length(@json_format)
 
@@ -116,6 +119,7 @@ defmodule Spanner.GenCommand.Foreign do
       "COG_CHAT_HANDLE" => request.requestor["handle"]}
     |> Map.merge(build_args_vars(request.args))
     |> Map.merge(build_options_vars(request.options))
+    |> Map.merge(filter_injectable_config(request.command_config))
   end
 
   defp build_args_vars([]) do
@@ -136,6 +140,11 @@ defmodule Spanner.GenCommand.Foreign do
       fn({key, value}, acc) ->
         Map.put(acc, "COG_OPT_#{String.upcase(key)}", "#{value}")
       end)
+  end
+
+  defp filter_injectable_config(config_map) do
+    Enum.filter(config_map, fn({k,_v}) -> String.starts_with?(k, @reserved_env_prefixes) == false end)
+    |> Enum.into(%{})
   end
 
   defp get_pipeline_id(request) do
