@@ -123,7 +123,7 @@ defmodule Spanner.GenCommand.Foreign do
   end
   defp build_args_vars(args) do
     acc = %{"COG_ARGC" => Integer.to_string(length(args))}
-    Enum.reduce(Enum.with_index(args, 1), acc,
+    Enum.reduce(Enum.with_index(args), acc,
       fn({value, index}, acc) ->
         Map.put(acc, "COG_ARGV_#{index}", "#{value}")
       end)
