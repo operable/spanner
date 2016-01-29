@@ -37,6 +37,7 @@ defmodule Spanner.GenCommand.Foreign do
 
   # Reserve these environment keys prefixes and disallow injectable config for them
   @reserved_env_prefixes ["COG_"]
+  @installed_path "$INSTALL_PATH"
 
   @json_format "JSON\n"
   @json_format_length String.length(@json_format)
@@ -46,11 +47,12 @@ defmodule Spanner.GenCommand.Foreign do
 
   def init(args, _service_proxy) do
     env_overlays = Keyword.get(args, :env, %{})
+    bundle_dir = Keyword.fetch!(args, :bundle_dir)
     {:ok, %__MODULE__{bundle:  Keyword.fetch!(args, :bundle),
-                      bundle_dir: Keyword.fetch!(args, :bundle_dir),
+                      bundle_dir: bundle_dir,
                       command: Keyword.fetch!(args, :command),
                       executable: Keyword.fetch!(args, :executable),
-                      base_env: build_base_environment(env_overlays),
+                      base_env: build_base_environment(env_overlays, bundle_dir),
                       executable_args: Keyword.get(args, :executable_args, [])}}
   end
 
@@ -100,26 +102,35 @@ defmodule Spanner.GenCommand.Foreign do
     end
   end
 
-  defp build_base_environment(overlays) do
+  defp build_base_environment(overlays, bundle_dir) do
     base_env = System.get_env()
     |> Enum.map(&filter_env(&1))
     |> :maps.from_list
 
     updated = overlays
-    |> Enum.map(fn({key, value}) -> {String.upcase(key), value} end)
+    |> Enum.map(fn({key, value}) -> {String.upcase(key), maybe_bundle_dir(value, bundle_dir)} end)
     |> :maps.from_list
 
     Map.merge(base_env, updated)
   end
 
-  defp build_calling_env(request, %__MODULE__{bundle: bundle, command: command}) do
+  defp maybe_bundle_dir(value, bundle_dir) do
+    case String.upcase(value) do
+      @installed_path ->
+        bundle_dir
+      _ ->
+        value
+    end
+  end
+
+  defp build_calling_env(request, %__MODULE__{bundle: bundle, command: command, bundle_dir: bundle_dir}) do
     %{"COG_BUNDLE" => bundle,
       "COG_COMMAND" => command,
       "COG_PIPELINE_ID" => get_pipeline_id(request),
       "COG_CHAT_HANDLE" => request.requestor["handle"]}
     |> Map.merge(build_args_vars(request.args))
     |> Map.merge(build_options_vars(request.options))
-    |> Map.merge(filter_injectable_config(request.command_config))
+    |> Map.merge(filter_injectable_config(request.command_config, bundle_dir))
   end
 
   defp build_args_vars([]) do
@@ -142,8 +153,9 @@ defmodule Spanner.GenCommand.Foreign do
       end)
   end
 
-  defp filter_injectable_config(config_map) do
+  defp filter_injectable_config(config_map, bundle_dir) do
     Enum.filter(config_map, fn({k,_v}) -> String.starts_with?(k, @reserved_env_prefixes) == false end)
+    |> Enum.map(fn({key, value}) -> {String.upcase(key), maybe_bundle_dir(value, bundle_dir)} end)
     |> Enum.into(%{})
   end
 
