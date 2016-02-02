@@ -62,18 +62,21 @@ defmodule Spanner.GenCommand.Foreign do
     send_reply(request, result, state)
   end
 
-  defp send_reply(request, result, state) do
-    content = if result.status == 0 do
-      parse_output(result.out)
-    else
-      parse_output(result.err)
-    end
-    case content do
-      {template, content} ->
+  defp send_reply(request, %Porcelain.Result{status: 0, out: out}, state) do
+    case parse_output(out) do
+      {template, {:ok, content}} ->
         {:reply, request.reply_to, template, content, state}
-      content ->
+      {_template, {:error, message}} ->
+        {:error, request.reply_to, message, state}
+      {:ok, content} ->
         {:reply, request.reply_to, content, state}
+      {:error, message} ->
+        {:error, request.reply_to, message, state}
     end
+  end
+  defp send_reply(request, %Porcelain.Result{err: err}, state) do
+    {_, message} = parse_output(err)
+    {:error, request.reply_to, message, state}
   end
 
   defp parse_output(text) do
@@ -93,12 +96,12 @@ defmodule Spanner.GenCommand.Foreign do
       raw_json = String.slice(text, @json_format_length..(String.length(text)))
       case Poison.decode(raw_json) do
         {:ok, json} ->
-          json
+          {:ok, json}
         _error ->
-          "Command returned invalid json: #{inspect raw_json}"
+          {:error, "Command returned invalid json: #{inspect raw_json}"}
       end
     else
-      text
+      {:ok, text}
     end
   end
 
