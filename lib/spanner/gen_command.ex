@@ -61,6 +61,7 @@ defmodule Spanner.GenCommand do
   @callback handle_message(Command.Request.t, callback_state())
             :: {:reply, message_bus_topic(), command_response(), callback_state()} |
                {:reply, message_bus_topic(), template(), command_response(), callback_state()} |
+               {:error, message_bus_topic(), String.t, callback_state()} |
                {:noreply, callback_state()}
 
   @doc """
@@ -185,7 +186,9 @@ defmodule Spanner.GenCommand do
           {:ok, req} ->
             process_message(req, cb_module, bundle, state)
           {:error, error} ->
-            {:noreply, send_error_reply(error, payload["reply_to"], state)}
+            # error is a map; turn it into a string for now to
+            # simplify the error reply contract.
+            {:noreply, send_error_reply(inspect(error), payload["reply_to"], state)}
         end
       false ->
         Logger.error("Message signature not verified! #{inspect message}")
@@ -213,6 +216,9 @@ defmodule Spanner.GenCommand do
       {:reply, reply_to, reply, cb_state} ->
         new_state = %{state | cb_state: cb_state}
         {:noreply, send_ok_reply(reply, reply_to, new_state)}
+      {:error, reply_to, error_message, cb_state} ->
+        new_state = %{state | cb_state: cb_state}
+        {:noreply, send_error_reply(error_message, reply_to, new_state)}
       {:noreply, cb_state} ->
         new_state = %{state | cb_state: cb_state}
         {:noreply, new_state}
@@ -221,13 +227,11 @@ defmodule Spanner.GenCommand do
 
   ########################################################################
 
-  defp send_error_reply(reply, reply_to, state) when is_map(reply) or is_list(reply) do
-    resp = Command.Response.encode!(%Command.Response{status: :error, body: reply})
+  defp send_error_reply(error_message, reply_to, state) when is_binary(error_message) do
+    resp = Command.Response.encode!(%Command.Response{status: :error, status_message: error_message})
     Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
     state
   end
-  defp send_error_reply(reply, reply_to, state),
-    do: send_error_reply(%{body: [reply]}, reply_to, state)
 
   ########################################################################
 
