@@ -41,7 +41,8 @@ defmodule Spanner.Bundle.ConfigValidator do
             end
     JsonNavigator.get!(json, [{"permissions", :array}])
     JsonNavigator.get!(json, [{"rules", :array}])
-    JsonNavigator.get!(json, [{"templates", :array}])
+    templates = JsonNavigator.get!(json, [{"templates", :array}])
+    validate_templates!(templates)
     validate_optional_attributes!(json["bundle"], [{"install", :string}, {"uninstall", :string}])
     commands = JsonNavigator.get!(json, [{"commands", :array}])
     validate_commands!(btype, commands)
@@ -71,6 +72,21 @@ defmodule Spanner.Bundle.ConfigValidator do
     else
       :ok
     end
+  end
+
+  defp validate_templates!([]), do: :ok
+  defp validate_templates!([cmd|t]) do
+    JsonNavigator.get!(cmd, [{"template", :string}])
+    JsonNavigator.get!(cmd, [{"path", :string}])
+    adapter = JsonNavigator.get!(cmd, [{"adapter", :string}])
+    case String.downcase(adapter) do
+      type when type in ["slack", "hipchat"] ->
+        type
+      _ ->
+        raise ValidationError, field: "adapter", reason: :wrong_value,
+                               message: "Unknown adapter \'#{adapter}\'"
+    end
+    validate_templates!(t)
   end
 
   defp validate_optional_attributes!(_json, []) do
