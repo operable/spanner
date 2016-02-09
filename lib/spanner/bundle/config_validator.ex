@@ -76,7 +76,7 @@ defmodule Spanner.Bundle.ConfigValidator do
 
   defp validate_templates!([]), do: :ok
   defp validate_templates!([cmd|t]) do
-    JsonNavigator.get!(cmd, [{"template", :string}])
+    JsonNavigator.get!(cmd, [{"name", :string}])
     JsonNavigator.get!(cmd, [{"path", :string}])
     adapter = JsonNavigator.get!(cmd, [{"adapter", :string}])
     case String.downcase(adapter) do
