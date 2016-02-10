@@ -156,7 +156,7 @@ defmodule Spanner.Bundle.Config do
 
       %{"adapter" => adapter,
         "name" => name,
-        "path" => relative_path,
+        "path" => path,
         "source" => source}
     end
 
