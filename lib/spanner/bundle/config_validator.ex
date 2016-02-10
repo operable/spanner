@@ -84,7 +84,7 @@ defmodule Spanner.Bundle.ConfigValidator do
         type
       _ ->
         raise ValidationError, field: "adapter", reason: :wrong_value,
-                               message: "Unknown adapter \'#{adapter}\'"
+                               message: "Unknown adapter '#{adapter}'"
     end
     validate_templates!(t)
   end
