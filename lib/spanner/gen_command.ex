@@ -235,13 +235,13 @@ defmodule Spanner.GenCommand do
 
   ########################################################################
 
-  defp send_ok_reply(reply, {bundle, template}, reply_to, state) when is_map(reply) or is_list(reply) do
+  defp send_ok_reply(reply, {bundle, template}, reply_to, state) when is_map(reply) or is_list(reply) or is_nil(reply) do
     resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply, bundle: bundle, template: template})
     Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
     state
   end
 
-  defp send_ok_reply(reply, reply_to, state) when is_map(reply) or is_list(reply) do
+  defp send_ok_reply(reply, reply_to, state) when is_map(reply) or is_list(reply) or is_nil(reply) do
     resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply})
     Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
     state
