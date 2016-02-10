@@ -133,20 +133,10 @@ defmodule Spanner.Bundle.Config.Test do
     assert %{"templates" => [%{"adapter" => "hipchat",
                                "name" => "help",
                                "path" => "test/support/test-bundle/templates/hipchat/help.mustache",
-                               "source" => """
-                               {{#command}}
-                                 Documentation for <pre>{{command}}</pre>
-                                 {{{documentation}}}
-                               {{/command}}
-                               """},
+                              },
                              %{"adapter" => "slack",
                                "name" => "help",
                                "path" => "test/support/test-bundle/templates/slack/help.mustache",
-                               "source" => """
-                               {{#command}}
-                                 Documentation for `{{command}}`
-                                 {{{documentation}}}
-                               {{/command}}
-                               """}]} = config
+                               }]} = config
   end
 end
