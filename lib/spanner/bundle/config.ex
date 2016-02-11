@@ -152,10 +152,12 @@ defmodule Spanner.Bundle.Config do
       relative_path = Path.relative_to(path, work_dir)
       ["templates", adapter, file] = Path.split(relative_path)
       name = Path.basename(file, ".mustache")
+      source = File.read!(path)
 
       %{"adapter" => adapter,
         "name" => name,
-        "path" => path}
+        "path" => path,
+        "source" => source}
     end
 
     %{"templates" => templates}
