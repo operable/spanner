@@ -16,7 +16,7 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, git: "git@github.com:operable/piper", ref: "888d9df3eeeb16954bf0e68c9083a28baf6c92d5"},
+    [{:piper, git: "git@github.com:operable/piper", ref: "1b0526c67541b59ff4ede84153a29f9b74e62d98"},
      {:carrier, git: "git@github.com:operable/carrier", ref: "385f2d6f724dfd5fea0421e010b9883486ca3cf6"},
      {:porcelain, "~> 2.0.1"}]
   end
