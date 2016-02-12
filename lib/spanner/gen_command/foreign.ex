@@ -114,7 +114,6 @@ defmodule Spanner.GenCommand.Foreign do
     nil
   end
   defp process_log_statements(text, command_name) do
-    IO.puts("TEXT: #{text}")
     process_log_statements(String.split(text, "\n"), [], command_name)
   end
 
