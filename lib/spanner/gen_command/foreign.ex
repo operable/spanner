@@ -76,7 +76,8 @@ defmodule Spanner.GenCommand.Foreign do
         {:error, request.reply_to, message, state}
     end
   end
-  defp send_reply(request, %Porcelain.Result{err: err}, state) do
+  defp send_reply(request, %Porcelain.Result{err: err, out: out}, state) do
+    process_log_statements(out, state.command)
     {_, message} = parse_output(err, state.command)
     {:error, request.reply_to, message, state}
   end
@@ -108,7 +109,12 @@ defmodule Spanner.GenCommand.Foreign do
     end
   end
 
+  defp process_log_statements(text, command_name)
+  defp process_log_statements(nil, _) do
+    nil
+  end
   defp process_log_statements(text, command_name) do
+    IO.puts("TEXT: #{text}")
     process_log_statements(String.split(text, "\n"), [], command_name)
   end
 
@@ -118,12 +124,28 @@ defmodule Spanner.GenCommand.Foreign do
   defp process_log_statements([], remaining, _command_name) do
     Enum.join(Enum.reverse(remaining), "\n")
   end
-  defp process_log_statements([<<"LOG:", log_message::binary>>|t], remaining, command_name) do
-    Logger.info("#{command_name}: #{String.strip(log_message)}")
+  defp process_log_statements([<<"COGCMD_", log_message::binary>>|t], remaining, command_name) do
+    write_to_log(log_message, command_name)
     process_log_statements(t, remaining, command_name)
   end
   defp process_log_statements([h|t], remaining, command_name) do
     process_log_statements(t, [h|remaining], command_name)
+  end
+
+  defp write_to_log(<<"DEBUG:", message::binary>>, command_name) do
+    Logger.debug("From Cog command #{command_name}: #{String.strip(message)}")
+  end
+  defp write_to_log(<<"INFO:", message::binary>>, command_name) do
+    Logger.info("From Cog command #{command_name}: #{String.strip(message)}")
+  end
+  defp write_to_log(<<"WARN:", message::binary>>, command_name) do
+    Logger.warn("From Cog command #{command_name}: #{String.strip(message)}")
+  end
+  defp write_to_log(<<"ERR:", message::binary>>, command_name) do
+    Logger.error("From Cog command #{command_name}: #{String.strip(message)}")
+  end
+  defp write_to_log(_, _) do
+    :ok
   end
 
   defp build_base_environment(overlays, bundle_dir) do
