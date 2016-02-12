@@ -30,6 +30,8 @@ defmodule Spanner.GenCommand.Foreign do
   * COG_PIPELINE_ID="374643c4-3f48-4e60-8c4f-671e3a11c06b"
   """
 
+  require Logger
+
   @behaviour Spanner.GenCommand
 
   # Keep these env vars from the runtime environment
@@ -63,7 +65,7 @@ defmodule Spanner.GenCommand.Foreign do
   end
 
   defp send_reply(request, %Porcelain.Result{status: 0, out: out}, state) do
-    case parse_output(out) do
+    case parse_output(out, state.command) do
       {template, {:ok, content}} ->
         {:reply, request.reply_to, template, content, state}
       {_template, {:error, message}} ->
@@ -75,23 +77,24 @@ defmodule Spanner.GenCommand.Foreign do
     end
   end
   defp send_reply(request, %Porcelain.Result{err: err}, state) do
-    {_, message} = parse_output(err)
+    {_, message} = parse_output(err, state.command)
     {:error, request.reply_to, message, state}
   end
 
-  defp parse_output(text) do
+  defp parse_output(text, command_name) do
     case Regex.run(~r/^COG_TEMPLATE: ([a-zA-Z0-9_\.])+\n/, text, capture: :first) do
       nil ->
-        parse_content(text)
+        parse_content(text, command_name)
       [raw_template_name] ->
         {_, content} = String.split_at(text, String.length(raw_template_name))
         [_, template_name] = String.split(raw_template_name, ": ")
-        {String.strip(template_name), parse_content(content)}
+        {String.strip(template_name), parse_content(content, command_name)}
     end
   end
 
-  defp parse_content(text) do
+  defp parse_content(text, command_name) do
     text = String.strip(text)
+    |> process_log_statements(command_name)
     if String.starts_with?(text, @json_format) do
       raw_json = String.slice(text, @json_format_length..(String.length(text)))
       case Poison.decode(raw_json) do
@@ -103,6 +106,24 @@ defmodule Spanner.GenCommand.Foreign do
     else
       {:ok, text}
     end
+  end
+
+  defp process_log_statements(text, command_name) do
+    process_log_statements(String.split(text, "\n"), [], command_name)
+  end
+
+  defp process_log_statements([], [], _command_name) do
+    ""
+  end
+  defp process_log_statements([], remaining, _command_name) do
+    Enum.join(Enum.reverse(remaining), "\n")
+  end
+  defp process_log_statements([<<"LOG:", log_message::binary>>|t], remaining, command_name) do
+    Logger.info("#{command_name}: #{String.strip(log_message)}")
+    process_log_statements(t, remaining, command_name)
+  end
+  defp process_log_statements([h|t], remaining, command_name) do
+    process_log_statements(t, [h|remaining], command_name)
   end
 
   defp build_base_environment(overlays, bundle_dir) do
