@@ -200,10 +200,10 @@ defmodule Spanner.GenCommand.Base do
       @calling_convention unquote(calling_convention)
       @execution unquote(execution)
 
-      def init(_args, _service_proxy),
+      def init(_args),
         do: {:ok, []}
 
-      defoverridable [init: 2]
+      defoverridable [init: 1]
 
       @before_compile unquote(__MODULE__)
     end
