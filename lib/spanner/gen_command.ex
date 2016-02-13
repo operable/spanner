@@ -37,24 +37,10 @@ defmodule Spanner.GenCommand do
   """
   @type command_response() :: term()
 
-  @typedoc """
-  Interactions with services from within commands is done through a
-  "service proxy", which encapsulates the details of interacting with
-  the message bus.
-  """
-  @opaque service_proxy() :: pid()
-
   @doc """
   Initializes the callback module's internal state.
-
-  If your command is stateless and requires no interaction with
-  services, this can return any value.
-
-  If you *do* need to interact with services, you must store the
-  supplied service proxy in your state somehow. If you don't, it will
-  not be available in handle_message/2.
   """
-  @callback init(term(), service_proxy())
+  @callback init(term())
             :: {:ok, callback_state()} |
                {:error, term()}
 
@@ -149,19 +135,8 @@ defmodule Spanner.GenCommand do
           Carrier.Messaging.Connection.subscribe(conn, topic)
         end
 
-        # NOTICE: we are currently sharing the message queue connection
-        # between the GenCommand process and the ServiceProxy
-        # process. This is OK for our current uses (MQTT provided by
-        # emqttd) because the connection is itself just a PID. If in the
-        # future we were to change message buses or MQTT providers and the
-        # resulting connection were to be more complex (carrying around
-        # extra state, for example), we'd likely need to have separate
-        # connections.
-
-        # Note, the reply topic is only used in the service proxy
-        service_proxy = Spanner.ServiceProxy.new(conn, reply_topic)
         args = [{:bundle, bundle}, {:command, command}|args]
-        case module.init(args, service_proxy) do
+        case module.init(args) do
           {:ok, state} ->
             {:ok, %__MODULE__{bundle_name: bundle,
                               mq_conn: conn,

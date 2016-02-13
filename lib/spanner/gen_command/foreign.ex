@@ -47,7 +47,7 @@ defmodule Spanner.GenCommand.Foreign do
   defstruct [:bundle, :bundle_dir, :command, :executable,
              :executable_args, :base_env]
 
-  def init(args, _service_proxy) do
+  def init(args) do
     env_overlays = Keyword.get(args, :env, %{})
     bundle_dir = Keyword.fetch!(args, :bundle_dir)
     {:ok, %__MODULE__{bundle:  Keyword.fetch!(args, :bundle),
