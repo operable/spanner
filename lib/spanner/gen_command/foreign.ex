@@ -160,12 +160,7 @@ defmodule Spanner.GenCommand.Foreign do
   end
 
   defp maybe_bundle_dir(value, bundle_dir) do
-    case String.upcase(value) do
-      @installed_path ->
-        bundle_dir
-      _ ->
-        value
-    end
+    String.replace(value, ~r/\$INSTALL_PATH/, bundle_dir)
   end
 
   defp build_calling_env(request, %__MODULE__{bundle: bundle, command: command, bundle_dir: bundle_dir}) do
