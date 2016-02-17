@@ -2,6 +2,7 @@ defmodule Spanner.Bundle.ValidatorTest do
 
   alias Spanner.Bundle.ConfigValidator
   alias Spanner.Bundle.ConfigValidationError
+  alias Spanner.JsonNavigationError
 
   use ExUnit.Case, async: true
 
@@ -40,4 +41,45 @@ defmodule Spanner.Bundle.ValidatorTest do
     assert error.field == "install"
   end
 
+  test "raises on bad rule" do
+    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_rule") end)
+    assert error.reason == :bad_format
+    assert error.field == :rules
+  end
+
+  test "raises on missing permission in rule" do
+    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_missing_perm_rule") end)
+    assert error.reason == :incompatible_values
+    assert error.field == :rules
+  end
+
+  test "raises on bad command option type" do
+    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_command_option") end)
+    assert error.reason == :wrong_value
+    assert error.field == "type"
+  end
+
+  test "raises on mismatched bundle name in rule" do
+    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_mismatch_bundle") end)
+    assert error.reason == :incompatible_values
+    assert error.field == :rules
+  end
+
+  test "raises on mismatched command name in rule" do
+    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_mismatch_command") end)
+    assert error.reason == :bad_format
+    assert error.field == :rules
+  end
+
+  test "raises on bad template format" do
+    error = assert_raise(JsonNavigationError, fn() -> validate!("foreign_bad_template") end)
+    assert error.reason == :missing_key
+    assert error.field == "name"
+  end
+
+  test "raises on bad template adapter" do
+    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_template_adapter") end)
+    assert error.reason == :wrong_value
+    assert error.field == "adapter"
+  end
 end
