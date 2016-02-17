@@ -1,15 +1,13 @@
 {
   "templates": [],
-  "permissions": ["date:date", "date:view"],
-  "rules": [
-    "when command is date:date must have date:view"
-  ],
+  "permissions": [],
+  "rules": [],
   "commands": [
     {
       "version": "0.0.1",
       "options": [
         {
-          "type": "string",
+          "type": "integer",
           "required": false,
           "name": "format"
         }
