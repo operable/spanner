@@ -30,6 +30,7 @@ defmodule Spanner.GenCommand.Foreign do
   * COG_PIPELINE_ID="374643c4-3f48-4e60-8c4f-671e3a11c06b"
   """
 
+  import Spanner.GenCommand.Util, only: [format_error_message: 3]
   require Logger
 
   @behaviour Spanner.GenCommand
@@ -81,7 +82,17 @@ defmodule Spanner.GenCommand.Foreign do
     {_, message} = parse_output(err, state.command)
     {:error, request.reply_to, message, state}
   end
-
+  defp send_reply(request, error, state) do
+    # Note that we currently can use `System.stacktrace/0` here only
+    # because Porcelain (from whence the error will come) internally
+    # catches errors and turns them into error tuples, which is what
+    # we get here.
+    #
+    # `System.stacktrace/0` returns the stacktrace of the last
+    # exception, not the current stacktrace.
+    message = format_error_message(request.command, error, System.stacktrace)
+    {:error, request.reply_to, message, state}
+  end
   defp parse_output(text, command_name) do
     case Regex.run(~r/^COG_TEMPLATE: ([a-zA-Z0-9_\.])+\n/, text, capture: :first) do
       nil ->
