@@ -1,12 +1,12 @@
-%{"adz": {:git, "git@github.com:operable/adz", "ccb8d704273df616fa57e45c66275e59feeace46", [tag: "0.1-rc1"]},
-  "carrier": {:git, "git@github.com:operable/carrier", "385f2d6f724dfd5fea0421e010b9883486ca3cf6", [ref: "385f2d6f724dfd5fea0421e010b9883486ca3cf6"]},
+%{"adz": {:git, "git@github.com:operable/adz", "140db3cc4dbecee1a2b68e8d0b18d7c64f27996a", [ref: "140db3cc4dbecee1a2b68e8d0b18d7c64f27996a"]},
+  "carrier": {:git, "git@github.com:operable/carrier", "6db8be68c7003f27427acf93e3bc60d064f5d948", [ref: "6db8be68c7003f27427acf93e3bc60d064f5d948"]},
   "emqttc": {:git, "https://github.com/emqtt/emqttc.git", "9c989657a0e9beaf29ebef64d019c46381cb3599", [branch: "master"]},
   "enacl": {:git, "https://github.com/jlouis/enacl.git", "03f93c4f7d0cb56b5a86b445cb004a3a8de2278b", [tag: "0.15.0"]},
   "gen_logger": {:git, "git://github.com/emqtt/gen_logger.git", "eced518f1dea167bebd576bb8b1cccb764a45739", [branch: "master"]},
   "getopt": {:git, "https://github.com/jcomellas/getopt.git", "626698975e63866156159661d100785d65eab6f9", [branch: "master"]},
   "goldrush": {:git, "git://github.com/DeadZen/goldrush.git", "64864ba7fcf40988361340e48680b49a2c2938cf", [tag: "0.1.7"]},
   "lager": {:git, "git://github.com/basho/lager.git", "310ed140ab86b95dd9f1f1ed3bf2ca93f841349d", [branch: "master"]},
-  "piper": {:git, "git@github.com:operable/piper", "3915f008654230349d7b828c0f30f782c90d55f8", [ref: "3915f008654230349d7b828c0f30f782c90d55f8"]},
-  "poison": {:hex, :poison, "1.5.0"},
+  "piper": {:git, "git@github.com:operable/piper", "acfb2150a25004a5ab2a80e7a5bfd418f35ea532", [ref: "acfb2150a25004a5ab2a80e7a5bfd418f35ea532"]},
+  "poison": {:hex, :poison, "1.5.2"},
   "porcelain": {:hex, :porcelain, "2.0.1"},
-  "uuid": {:hex, :uuid, "1.0.1"}}
+  "uuid": {:hex, :uuid, "1.1.3"}}
