@@ -1,6 +1,6 @@
 %{"adz": {:git, "git@github.com:operable/adz", "140db3cc4dbecee1a2b68e8d0b18d7c64f27996a", [ref: "140db3cc4dbecee1a2b68e8d0b18d7c64f27996a"]},
-  "carrier": {:git, "git@github.com:operable/carrier", "6db8be68c7003f27427acf93e3bc60d064f5d948", [ref: "6db8be68c7003f27427acf93e3bc60d064f5d948"]},
-  "emqttc": {:git, "https://github.com/emqtt/emqttc.git", "9c989657a0e9beaf29ebef64d019c46381cb3599", [branch: "master"]},
+  "carrier": {:git, "git@github.com:operable/carrier", "4cb2e0981a8c548551702cba6a1453a9f5d15c08", [ref: "4cb2e0981a8c548551702cba6a1453a9f5d15c08"]},
+  "emqttc": {:git, "https://github.com/operable/emqttc.git", "dc36f593822f8e01771a7edc780441fdfb2f7b15", [ref: "dc36f593822f8e01771a7edc780441fdfb2f7b15"]},
   "enacl": {:git, "https://github.com/jlouis/enacl.git", "03f93c4f7d0cb56b5a86b445cb004a3a8de2278b", [tag: "0.15.0"]},
   "gen_logger": {:git, "git://github.com/emqtt/gen_logger.git", "eced518f1dea167bebd576bb8b1cccb764a45739", [branch: "master"]},
   "getopt": {:git, "https://github.com/jcomellas/getopt.git", "626698975e63866156159661d100785d65eab6f9", [branch: "master"]},
