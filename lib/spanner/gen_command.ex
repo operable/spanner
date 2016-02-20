@@ -74,6 +74,7 @@ defmodule Spanner.GenCommand do
 
   require Logger
   alias Spanner.Command
+  import Spanner.GenCommand.Util, only: [format_error_message: 3]
 
   ## Fields
   #
@@ -184,19 +185,25 @@ defmodule Spanner.GenCommand do
   ########################################################################
 
   defp process_message(req, cb_module, bundle, state) do
-    case cb_module.handle_message(req, state.cb_state) do
-      {:reply, reply_to, template, reply, cb_state} ->
-        new_state = %{state | cb_state: cb_state}
-        {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
-      {:reply, reply_to, reply, cb_state} ->
-        new_state = %{state | cb_state: cb_state}
-        {:noreply, send_ok_reply(reply, reply_to, new_state)}
-      {:error, reply_to, error_message, cb_state} ->
-        new_state = %{state | cb_state: cb_state}
-        {:noreply, send_error_reply(error_message, reply_to, new_state)}
-      {:noreply, cb_state} ->
-        new_state = %{state | cb_state: cb_state}
-        {:noreply, new_state}
+    try do
+      case cb_module.handle_message(req, state.cb_state) do
+        {:reply, reply_to, template, reply, cb_state} ->
+          new_state = %{state | cb_state: cb_state}
+          {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
+        {:reply, reply_to, reply, cb_state} ->
+          new_state = %{state | cb_state: cb_state}
+          {:noreply, send_ok_reply(reply, reply_to, new_state)}
+        {:error, reply_to, error_message, cb_state} ->
+          new_state = %{state | cb_state: cb_state}
+          {:noreply, send_error_reply(error_message, reply_to, new_state)}
+        {:noreply, cb_state} ->
+          new_state = %{state | cb_state: cb_state}
+          {:noreply, new_state}
+      end
+    rescue
+      error ->
+        message = format_error_message(req.command, error, System.stacktrace)
+        {:noreply, send_error_reply(message, req.reply_to, state)}
     end
   end
 
