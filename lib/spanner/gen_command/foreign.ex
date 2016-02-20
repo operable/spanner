@@ -65,6 +65,7 @@ defmodule Spanner.GenCommand.Foreign do
   end
 
   defp send_reply(request, %Porcelain.Result{status: 0, out: out}, state) do
+    out = process_log_statements(out, state.command)
     case parse_output(out, state.command) do
       {template, {:ok, content}} ->
         {:reply, request.reply_to, template, content, state}
