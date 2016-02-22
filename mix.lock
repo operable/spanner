@@ -1,6 +1,6 @@
-%{"adz": {:git, "git@github.com:operable/adz", "140db3cc4dbecee1a2b68e8d0b18d7c64f27996a", [ref: "140db3cc4dbecee1a2b68e8d0b18d7c64f27996a"]},
+%{"adz": {:git, "git@github.com:operable/adz", "601ceb3a19716ea635a7cd83c05f5593f5cf6c40", [tag: "0.2"]},
   "carrier": {:git, "git@github.com:operable/carrier", "107ee3b252cc57c8581cb3f37000139a7bb1a2d0", [tag: "0.2"]},
-  "emqttc": {:git, "https://github.com/operable/emqttc.git", "dc36f593822f8e01771a7edc780441fdfb2f7b15", [ref: "dc36f593822f8e01771a7edc780441fdfb2f7b15"]},
+  "emqttc": {:git, "https://github.com/operable/emqttc.git", "dc36f593822f8e01771a7edc780441fdfb2f7b15", [tag: "cog-0.2"]},
   "enacl": {:git, "https://github.com/jlouis/enacl.git", "03f93c4f7d0cb56b5a86b445cb004a3a8de2278b", [tag: "0.15.0"]},
   "gen_logger": {:git, "git://github.com/emqtt/gen_logger.git", "eced518f1dea167bebd576bb8b1cccb764a45739", [branch: "master"]},
   "getopt": {:git, "https://github.com/jcomellas/getopt.git", "626698975e63866156159661d100785d65eab6f9", [branch: "master"]},
