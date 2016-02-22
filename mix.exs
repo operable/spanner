@@ -3,7 +3,7 @@ defmodule Spanner.Mixfile do
 
   def project do
     [app: :spanner,
-     version: "0.0.1",
+     version: "0.2.0",
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -16,8 +16,8 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, git: "git@github.com:operable/piper", ref: "f665a77a0ee6ff32438b599071ea01ee1d8cce46"},
-     {:carrier, git: "git@github.com:operable/carrier", ref: "04704acfa02bc1783ca3523b4f37972f6e904720"},
+    [{:piper, git: "git@github.com:operable/piper", tag: "0.2"},
+     {:carrier, git: "git@github.com:operable/carrier", tag: "0.2"},
      {:porcelain, "~> 2.0.1"}]
   end
 end
