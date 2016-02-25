@@ -34,13 +34,6 @@ defmodule Spanner.Bundle.ConfigValidator do
   end
   def validate!(json) when is_map(json) do
     bundle_name = JsonNavigator.get!(json, ["bundle", {"name", :string}])
-    btype = case JsonNavigator.get!(json, ["bundle", {"type", :string}]) do
-              type when type in ["foreign", "elixir"] ->
-                type
-              type ->
-                raise ValidationError, field: "type", reason: :wrong_value,
-                                       message: "Expected \'foreign\' or \'elixir\' but found \'#{type}\'"
-            end
     templates = JsonNavigator.get!(json, [{"templates", :array}])
     validate_templates!(templates)
     validate_optional_attributes!(json["bundle"], [{"install", :string}, {"uninstall", :string}])
@@ -48,21 +41,16 @@ defmodule Spanner.Bundle.ConfigValidator do
     permissions = JsonNavigator.get!(json, [{"permissions", :array}])
     rules = JsonNavigator.get!(json, [{"rules", :array}])
     validate_rules!(rules, permissions, commands, bundle_name)
-    validate_commands!(btype, commands)
+    validate_commands!(commands)
   end
 
   # Validate Commands
-  defp validate_commands!(_btype, []), do: :ok
-  defp validate_commands!("foreign", [cmd|t]) do
+  defp validate_commands!([]), do: :ok
+  defp validate_commands!([cmd|remaining]) do
     validate_common_command_fields!(cmd)
     JsonNavigator.get!(cmd, [{"executable", :string}])
     JsonNavigator.get!(cmd, [{"env_vars", :map}])
-    validate_commands!("foreign", t)
-  end
-  defp validate_commands!("elixir", [cmd|t]) do
-    validate_common_command_fields!(cmd)
-    JsonNavigator.get!(cmd, [{"module", :string}])
-    validate_commands!("elixir", t)
+    validate_commands!(remaining)
   end
 
   defp validate_common_command_fields!(json) do
