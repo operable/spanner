@@ -1,5 +1,5 @@
 %{"adz": {:git, "https://github.com/operable/adz.git", "601ceb3a19716ea635a7cd83c05f5593f5cf6c40", [tag: "0.2"]},
-  "carrier": {:git, "https://github.com/operable/carrier.git", "addaf0acd9acc3af894ccb396550f8785f277074", [tag: "0.2"]},
+  "carrier": {:git, "https://github.com/operable/carrier.git", "5fec0f891c44fb02fdc9d287752bc9dc1bf9c88a", [branch: "kevsmith/enable-ssl"]},
   "emqttc": {:git, "https://github.com/operable/emqttc.git", "dc36f593822f8e01771a7edc780441fdfb2f7b15", [tag: "cog-0.2"]},
   "enacl": {:git, "https://github.com/jlouis/enacl.git", "03f93c4f7d0cb56b5a86b445cb004a3a8de2278b", [tag: "0.15.0"]},
   "gen_logger": {:git, "git://github.com/emqtt/gen_logger.git", "f985723843926f1814818bf63646b3dedf5c9fb3", [branch: "master"]},

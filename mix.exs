@@ -17,7 +17,7 @@ defmodule Spanner.Mixfile do
 
   defp deps do
     [{:piper, github: "operable/piper", ref: "b78b673c3d6e611e1151d896d4eda393605ef0f7"},
-     {:carrier, github: "operable/carrier", tag: "0.2"},
+     {:carrier, github: "operable/carrier", branch: "kevsmith/enable-ssl"},
      {:porcelain, "~> 2.0.1"}]
   end
 end
