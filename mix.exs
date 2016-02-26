@@ -16,7 +16,7 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, github: "operable/piper", ref: "b78b673c3d6e611e1151d896d4eda393605ef0f7"},
+    [{:piper, github: "operable/piper", branch: "kevsmith/emojis"},
      {:carrier, github: "operable/carrier", tag: "0.2"},
      {:porcelain, "~> 2.0.1"}]
   end
