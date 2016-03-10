@@ -21,10 +21,6 @@ defmodule Spanner.Bundle.ValidatorTest do
     ConfigValidator.validate!(get_config(name))
   end
 
-  test "validates valid Elixir command config" do
-    assert validate("valid_elixir_config") == :ok
-  end
-
   test "validates valid foreign command config" do
     assert validate("valid_foreign_config") == :ok
   end
@@ -81,5 +77,9 @@ defmodule Spanner.Bundle.ValidatorTest do
     error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_template_adapter") end)
     assert error.reason == :wrong_value
     assert error.field == "adapter"
+  end
+
+  test "does not raise with no bundle type (assumes foreign bundle)" do
+    assert validate("valid_foreign_config_without_type") == :ok
   end
 end
