@@ -25,16 +25,16 @@ defmodule Spanner.Config.Parser.Test do
     assert status == :error
   end
 
-  test "read_from_file parses valid yml" do
+  test "read_from_file parses valid yaml" do
     expected = %{"foo" => [], "bar" => "bar", "baz" => ["biz", "buz"]}
 
-    {:ok, results} = Config.Parser.read_from_file("test/assets/good.yml")
+    {:ok, results} = Config.Parser.read_from_file("test/assets/good.yaml")
 
     assert results == expected
   end
 
-  test "read_from_file returns an error with bad yml" do
-    {status, _} = Config.Parser.read_from_file("test/assets/bad.yml")
+  test "read_from_file returns an error with bad yaml" do
+    {status, _} = Config.Parser.read_from_file("test/assets/bad.yaml")
 
     assert status == :error
   end
