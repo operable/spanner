@@ -33,7 +33,7 @@ defmodule Spanner.Command.Request do
       {:ok, ""} -> {:ok, %{}}
       {:ok, config} -> {:ok, config}
       {:error, error} ->
-        err = "Unable to read the command config file '#{Config.dynamic_config_file}' for the command '#{request.command}'. #{inspect error}"
+        err = "Unable to read the command config file '#{Config.dynamic_file_name}' for the command '#{request.command}'. #{inspect error}"
         Logger.error(err)
         {:error, err}
     end
@@ -48,7 +48,7 @@ defmodule Spanner.Command.Request do
 
   defp read_config(request, config_path) do
     [bundle, _cmd] = String.split(request.command, ":")
-    cmd_config_file = Path.join([config_path, bundle, Config.dynamic_config_file()])
+    cmd_config_file = Path.join([config_path, bundle, Config.dynamic_file_name()])
     case File.exists?(cmd_config_file) do
       true ->
         Config.Parser.read_from_file(cmd_config_file)

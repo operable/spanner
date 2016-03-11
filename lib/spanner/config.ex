@@ -5,6 +5,6 @@ defmodule Spanner.Config do
   def file_name(),
     do: @config_file
 
-  def dynamic_config_file(),
+  def dynamic_file_name(),
     do: @dynamic_config_file
 end
