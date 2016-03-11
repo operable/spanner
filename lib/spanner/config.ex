@@ -1,6 +1,6 @@
 defmodule Spanner.Config do
-  @config_file "config.yml"
-  @dynamic_config_file "config.yml"
+  @config_file "config.yaml"
+  @dynamic_config_file "config.yaml"
 
   def file_name(),
     do: @config_file
