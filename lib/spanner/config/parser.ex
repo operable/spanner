@@ -30,7 +30,9 @@ defmodule Spanner.Config.Parser do
   def read_from_string(str) do
     try do
       yaml = YamlElixir.read_from_string(str)
-      # Sometimes errors caught by 'YamlElixir.read_from_file/1'
+      # Some errors caught by 'YamlElixir.read_from_file/1' aren't caught by
+      # `YamlElixir.read_from_string/1` and we get back an empty map. We should
+      # never get back an empty map, so we return an error here.
       if length(Map.values(yaml)) == 0 do
         {:error, ["Empty map returned. Make sure there are no errors in your YAML."]}
       else
