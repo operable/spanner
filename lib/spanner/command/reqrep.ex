@@ -1,6 +1,7 @@
 defmodule Spanner.Command.Request do
 
   use Spanner.Marshalled
+  alias Spanner.Config
 
   require Logger
 
@@ -30,19 +31,9 @@ defmodule Spanner.Command.Request do
   defp get_config(request) do
     case open_config(request) do
       {:ok, ""} -> {:ok, %{}}
-      {:ok, config} -> decode_config(request, config)
+      {:ok, config} -> {:ok, config}
       {:error, error} ->
-        err = "Unable to read the command config file 'config.json' for the command '#{request.command}'. #{inspect error}"
-        Logger.error(err)
-        {:error, err}
-    end
-  end
-
-  defp decode_config(request, config) do
-    case Poison.decode(config) do
-      {:ok, cmd_config} -> {:ok, cmd_config}
-      {:error, error} ->
-        err = "Unable to load configuration data for #{request.command}. Please verify the configuration data is in valid json format. #{inspect error}"
+        err = "Unable to read the command config file '#{Config.dynamic_file_name}' for the command '#{request.command}'. #{inspect error}"
         Logger.error(err)
         {:error, err}
     end
@@ -56,13 +47,11 @@ defmodule Spanner.Command.Request do
   end
 
   defp read_config(request, config_path) do
-    [bundle, _cmd] = String.split(request.command, ":")
-    cmd_config_file = Path.join([config_path, bundle, "config.json"])
+    [bundle, _cmd] = String.split(request.command, ":", parts: 2)
+    cmd_config_file = Path.join([config_path, bundle, Config.dynamic_file_name()])
     case File.exists?(cmd_config_file) do
       true ->
-        File.open(cmd_config_file, [:read], fn(file) ->
-          IO.read(file, :all)
-        end)
+        Config.Parser.read_from_file(cmd_config_file)
       false -> {:ok, ""}
     end
   end
