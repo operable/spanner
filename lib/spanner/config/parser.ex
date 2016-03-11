@@ -33,6 +33,8 @@ defmodule Spanner.Config.Parser do
       # Sometimes errors caught by 'YamlElixir.read_from_file/1'
       if length(Map.values(yaml)) == 0 do
         {:error, ["Empty map returned. Make sure there are no errors in your YAML."]}
+      else
+        {:ok, yaml}
       end
     catch
       {:yamerl_exception, errors} ->
