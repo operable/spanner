@@ -15,7 +15,7 @@ defmodule Spanner.Config.Parser do
       # We should never get an empty map back from 'YamlElixir.read_from_file/1'.
       # If we do, we return an error.
       if length(Map.values(yaml)) == 0 do
-        {:error, ["Empty map returned. Make sure there are no errors in your YAML."]}
+        {:error, ["Parsing '#{path}' returned an empty map. Check the file for syntax errors such as missing closing brackets."]}
       else
         {:ok, yaml}
       end
@@ -36,7 +36,7 @@ defmodule Spanner.Config.Parser do
       # We should never get an empty map back from 'YamlElixir.read_from_file/1'.
       # If we do, we return an error.
       if length(Map.values(yaml)) == 0 do
-        {:error, ["Empty map returned. Make sure there are no errors in your YAML."]}
+        {:error, ["Error parsing config. An empty map was returned. Check the file for syntax errors such as missing closing brackets."]}
       else
         {:ok, yaml}
       end
