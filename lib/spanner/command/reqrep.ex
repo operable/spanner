@@ -47,7 +47,7 @@ defmodule Spanner.Command.Request do
   end
 
   defp read_config(request, config_path) do
-    [bundle, _cmd] = String.split(request.command, ":")
+    [bundle, _cmd] = String.split(request.command, ":", parts: 2)
     cmd_config_file = Path.join([config_path, bundle, Config.dynamic_file_name()])
     case File.exists?(cmd_config_file) do
       true ->
