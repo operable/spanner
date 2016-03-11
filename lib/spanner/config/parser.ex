@@ -11,7 +11,14 @@ defmodule Spanner.Config.Parser do
   """
   def read_from_file(path) do
     try do
-      {:ok, YamlElixir.read_from_file(path)}
+      yaml = YamlElixir.read_from_file(path)
+      # We should never get an empty map back from 'YamlElixir.read_from_file/1'.
+      # If we do, we return an error.
+      if length(Map.values(yaml)) == 0 do
+        {:error, ["Empty map returned. Make sure there are no errors in your YAML."]}
+      else
+        {:ok, yaml}
+      end
     catch
       {:yamerl_exception, errors} ->
         {:error, Enum.map(errors, &format_errors/1)}
@@ -22,17 +29,12 @@ defmodule Spanner.Config.Parser do
   Reads YAML from a string. The underlying lib, yamerl, throws when
   errors occur. We catch those and return tuple containing the atom ':error'
   and the list error messages.
-
-  note: unlike YamlElixir.read_from_file/1 there are some instances where read_from_string
-  will ignore errors and just return an empty map. It appears to be an issue with yamerl,
-  the erlang lib. In those cases we return an error.
   """
   def read_from_string(str) do
     try do
       yaml = YamlElixir.read_from_string(str)
-      # Some errors caught by 'YamlElixir.read_from_file/1' aren't caught by
-      # `YamlElixir.read_from_string/1` and we get back an empty map. We should
-      # never get back an empty map, so we return an error here.
+      # We should never get an empty map back from 'YamlElixir.read_from_file/1'.
+      # If we do, we return an error.
       if length(Map.values(yaml)) == 0 do
         {:error, ["Empty map returned. Make sure there are no errors in your YAML."]}
       else

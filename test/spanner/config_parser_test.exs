@@ -34,14 +34,14 @@ defmodule Spanner.Config.Parser.Test do
   end
 
   test "read_from_file returns an error with bad yml" do
-    {status, _} = Config.Parser.read_from_file("test/assets/bad.yml")
+    {status, results} = Config.Parser.read_from_file("test/assets/bad.yml")
 
-    assert status = :error
+    assert status == :error
   end
 
   test "read_from_file returns an error with a bad file path" do
     {status, _} = Config.Parser.read_from_file("foo")
 
-    assert status = :error
+    assert status == :error
   end
 end
