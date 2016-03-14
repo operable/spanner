@@ -24,6 +24,7 @@ defmodule Spanner.Mixfile do
      {:yaml_elixir, "~> 1.0.0"},
      {:yamerl, github: "yakaz/yamerl"},
 
+     {:ex_json_schema, "~> 0.3.1"},
      {:porcelain, "~> 2.0.1"}]
   end
 end
