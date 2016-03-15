@@ -31,35 +31,11 @@ defmodule Spanner.Bundle.ValidatorTest do
     assert response == {:error, [{"Type mismatch. Expected String but got Boolean.", "#/bundle/install"}]}
   end
 
-  #test "raises on bad rule" do
-    #error = assert_raise(ConfigValidationError, fn() -> validate("foreign_bad_rule") end)
-    #assert error.reason == :bad_format
-    #assert error.field == :rules
-  #end
-
-  #test "raises on missing permission in rule" do
-    #error = assert_raise(ConfigValidationError, fn() -> validate("foreign_missing_perm_rule") end)
-    #assert error.reason == :incompatible_values
-    #assert error.field == :rules
-  #end
-
   test "errors on bad command option type" do
     response = validate("foreign_bad_command_option")
 
     assert response == {:error, [{"Value \"integer\" is not allowed in enum.", "#/commands/0/options/0/type"}]}
   end
-
-  #test "raises on mismatched bundle name in rule" do
-    #error = assert_raise(ConfigValidationError, fn() -> validate("foreign_mismatch_bundle") end)
-    #assert error.reason == :incompatible_values
-    #assert error.field == :rules
-  #end
-
-  #test "raises on mismatched command name in rule" do
-    #error = assert_raise(ConfigValidationError, fn() -> validate("foreign_mismatch_command") end)
-    #assert error.reason == :bad_format
-    #assert error.field == :rules
-  #end
 
   test "errors on bad template format" do
     response = validate("foreign_bad_template")
