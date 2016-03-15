@@ -1,82 +1,66 @@
 defmodule Spanner.Bundle.ValidatorTest do
 
-  alias Spanner.Bundle.ConfigValidator
-  alias Spanner.Bundle.ConfigValidationError
-  alias Spanner.JsonNavigationError
+  alias Spanner.Config
 
   use ExUnit.Case, async: true
 
   defp get_config(name) do
-    name = name <> ".json"
+    name = name <> ".yaml"
     path = Path.join("test/assets/configs", name)
-    data = File.read!(path)
-    Poison.decode!(data)
+    {:ok, config} = Spanner.Config.Parser.read_from_file(path)
+    config
   end
 
   defp validate(name) do
-    ConfigValidator.validate(get_config(name))
-  end
-
-  defp validate!(name) do
-    ConfigValidator.validate!(get_config(name))
+    Config.Validator.validate(get_config(name))
   end
 
   test "validates valid foreign command config" do
     assert validate("valid_foreign_config") == :ok
   end
 
-  test "raises on bad uninstall attribute" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_uninstall") end)
-    assert error.reason == :wrong_type
-    assert error.field == "uninstall"
+  test "errors on bad rule" do
+    response = validate("foreign_bad_rule")
+
+    assert response == {:error, [{"(Line: 1, Col: 34) References to permissions must start with a command bundle name or \"site\".", "#/rules/0"}]}
   end
 
-  test "raises on bad install attribute" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_install") end)
-    assert error.reason == :wrong_type
-    assert error.field == "install"
+  test "errors when enforcing commands use the 'all' calling convention" do
+    response = validate("foreign_bad_enforcing_command")
+
+    assert response == {:error, [{"Enforcing commands must use the bound calling convention.", "#/commands/0/calling_convention"}]}
   end
 
-  test "raises on bad rule" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_rule") end)
-    assert error.reason == :bad_format
-    assert error.field == :rules
+  test "errors on bad uninstall attribute" do
+    response = validate("foreign_bad_uninstall")
+
+    assert response == {:error, [{"Type mismatch. Expected String but got Integer.", "#/bundle/uninstall"}]}
   end
 
-  test "raises on missing permission in rule" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_missing_perm_rule") end)
-    assert error.reason == :incompatible_values
-    assert error.field == :rules
+  test "errors on bad install attribute" do
+    response = validate("foreign_bad_install")
+
+    assert response == {:error, [{"Type mismatch. Expected String but got Boolean.", "#/bundle/install"}]}
   end
 
-  test "raises on bad command option type" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_command_option") end)
-    assert error.reason == :wrong_value
-    assert error.field == "type"
+  test "errors on bad command option type" do
+    response = validate("foreign_bad_command_option")
+
+    assert response == {:error, [{"Value \"integer\" is not allowed in enum.", "#/commands/0/options/0/type"}]}
   end
 
-  test "raises on mismatched bundle name in rule" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_mismatch_bundle") end)
-    assert error.reason == :incompatible_values
-    assert error.field == :rules
+  test "errors on bad template format" do
+    response = validate("foreign_bad_template")
+
+    assert response == {:error, [{"Required property name was not present.", "#/templates/0"},
+                                 {"Required property adapter was not present.", "#/templates/0"},
+                                 {"Required property path was not present.", "#/templates/0"}]}
   end
 
-  test "raises on mismatched command name in rule" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_mismatch_command") end)
-    assert error.reason == :bad_format
-    assert error.field == :rules
-  end
+  test "errors on bad template adapter" do
+    response = validate("foreign_bad_template_adapter")
 
-  test "raises on bad template format" do
-    error = assert_raise(JsonNavigationError, fn() -> validate!("foreign_bad_template") end)
-    assert error.reason == :missing_key
-    assert error.field == "name"
-  end
-
-  test "raises on bad template adapter" do
-    error = assert_raise(ConfigValidationError, fn() -> validate!("foreign_bad_template_adapter") end)
-    assert error.reason == :wrong_value
-    assert error.field == "adapter"
+    assert response == {:error, [{"Value \"meh\" is not allowed in enum.", "#/templates/0/adapter"}]}
   end
 
   test "does not raise with no bundle type (assumes foreign bundle)" do

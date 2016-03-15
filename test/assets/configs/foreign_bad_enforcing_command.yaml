@@ -1,0 +1,21 @@
+---
+templates: []
+permissions: []
+rules: []
+commands:
+- version: 0.0.1
+  options:
+  - type: int
+    required: false
+    name: format
+  name: date
+  env_vars:
+    SERVICE_USER: testing
+  executable: "/bin/date"
+  enforcing: true
+  calling_convention: all
+  documentation: date [--format=<date_format>] [date] - Returns current date or formats
+    a user-specified date
+bundle:
+  name: date
+  type: foreign

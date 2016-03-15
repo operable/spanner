@@ -1,0 +1,21 @@
+---
+templates: []
+permissions: []
+rules:
+- when command is foo:bar must have foo:baz
+commands:
+- version: 0.0.1
+  options:
+  - type: string
+    required: false
+    name: format
+  name: bar
+  env_vars:
+    SERVICE_USER: testing
+  executable: "/bin/date"
+  enforcing: true
+  documentation: Some foo documentation for foo:bar
+  calling_convention: bound
+bundle:
+  type: foreign
+  name: foo
