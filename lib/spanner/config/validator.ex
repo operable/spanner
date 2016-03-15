@@ -12,7 +12,7 @@ defmodule Spanner.Config.Validator do
   `{:error, err}` on error. Validate does three major checks. An error can be
   returned during any one of these. First it does some basic validation on the
   config using JsonSchema. Next we verify that the calling convention only occurs
-  on unenforced commands. Last we validate that any rules parse.
+  on unenforced commands. Last we validate that all rules at least parse.
   """
   def validate(config) do
     with {:ok, schema} <- load_schema("bundle_config_schema"),
