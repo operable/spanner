@@ -38,13 +38,17 @@ defmodule Spanner.Config.Validator do
             "install" => %{
               "type" => "string",
               "description" => "The path to the script to install the bundle"
+            },
+            "uninstall" => %{
+              "type" => "string",
+              "description" => "The path to the script to uninstall the bundle"
             }
           }
         },
         "templates" => %{
           "type" => "array",
           "items" => %{
-            "type" => "object"
+            "$ref" => "#/definitions/template"
           }
         },
         "permissions" => %{
@@ -82,17 +86,30 @@ defmodule Spanner.Config.Validator do
             },
             "env_vars" => %{"type" => "object"},
             "documentation" => %{"type" => "string"},
-            "option" => %{
+            "options" => %{
               "type" => "array",
               "items" => %{
                 "type" => "object",
                 "properties" => %{
-                  "type" => %{"type" => "string"},
+                  "type" => %{
+                    "enum" => ["string", "int", "bool"]
+                  },
                   "required" => %{"type" => "boolean"},
                   "name" => %{"type" => "string"}
                 }
               }
             }
+          }
+        },
+        "template" => %{
+          "type" => "object",
+          "required" => ["name", "adapter", "path"],
+          "properties" => %{
+            "name" => %{"type" => "string"},
+            "adapter" => %{
+              "enum" => ["slack", "hipchat"]
+            },
+            "path" => %{"type" => "string"}
           }
         }
       }
