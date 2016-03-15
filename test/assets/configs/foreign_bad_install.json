@@ -13,6 +13,7 @@
         }
       ],
       "name": "date",
+      "env_vars": {},
       "executable": "/bin/date",
       "enforcing": false,
       "calling_convention": "bound",
