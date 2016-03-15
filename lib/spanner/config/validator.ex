@@ -1,5 +1,7 @@
 defmodule Spanner.Config.Validator do
 
+  alias Piper.Permissions.Parser
+
   @moduledoc """
   Validates bundle configs based on a built in schema.
   """
@@ -10,7 +12,8 @@ defmodule Spanner.Config.Validator do
   def validate(config) do
     with {:ok, schema} <- resolve_schema(),
          :ok <- ExJsonSchema.Validator.validate(schema, config),
-         :ok <- validate_command_calling_convention(config["commands"]) do
+         :ok <- validate_command_calling_convention(config["commands"]),
+         :ok <- validate_rule_parsing(config["rules"]) do
            :ok
     end
   end
@@ -31,7 +34,7 @@ defmodule Spanner.Config.Validator do
   end
 
   defp validate_command_calling_convention(commands) do
-    errors = Enum.with_index(commands)
+    Enum.with_index(commands)
     |> Enum.reduce([], fn({command, index}, acc) ->
       if command["enforcing"] and command["calling_convention"] == "all" do
         [{"Enforced commands must use the bound calling convention.", "#/commands/#{index}/calling_convention"} | acc]
@@ -39,13 +42,26 @@ defmodule Spanner.Config.Validator do
         acc
       end
     end)
-
-    if length(errors) > 0 do
-      {:error, errors}
-    else
-      :ok
-    end
+    |> prepare_return
   end
+
+  defp validate_rule_parsing(rules) do
+    Enum.with_index(rules)
+    |> Enum.reduce([], fn({rule, index}, acc) ->
+      case Parser.parse(rule) do
+        {:ok, _, _} ->
+          acc
+        {:error, err} ->
+          [{err, "#/rules/#{index}"}  | acc]
+      end
+    end)
+    |> prepare_return
+  end
+
+  defp prepare_return(errors) when length(errors) > 0,
+    do: {:error, errors}
+  defp prepare_return([]),
+    do: :ok
 
   # Note: This is the schema for bundle configs. For right now it's just
   # hardcoded, but we could load it from a file or the db in the future.
@@ -76,6 +92,7 @@ defmodule Spanner.Config.Validator do
             }
           }
         },
+
         "templates" => %{
           "type" => "array",
           "items" => %{

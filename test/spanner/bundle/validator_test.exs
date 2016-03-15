@@ -19,6 +19,12 @@ defmodule Spanner.Bundle.ValidatorTest do
     assert validate("valid_foreign_config") == :ok
   end
 
+  test "errors on bad rule" do
+    response = validate("foreign_bad_rule")
+
+    assert response == {:error, [{"(Line: 1, Col: 34) References to permissions must start with a command bundle name or \"site\".", "#/rules/0"}]}
+  end
+
   test "errors when enforcing commands use the 'all' calling convention" do
     response = validate("foreign_bad_enforcing_command")
 
