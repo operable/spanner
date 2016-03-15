@@ -64,10 +64,10 @@ defmodule Spanner.Config.Validator do
     |> prepare_return
   end
 
-  defp prepare_return(errors) when length(errors) > 0,
-    do: {:error, errors}
   defp prepare_return([]),
     do: :ok
+  defp prepare_return(errors),
+    do: {:error, errors}
 
   defp load_schema(name) do
     # Returns absolute path to spanner/priv
