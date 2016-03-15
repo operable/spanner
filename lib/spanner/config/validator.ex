@@ -43,7 +43,7 @@ defmodule Spanner.Config.Validator do
     Enum.with_index(commands)
     |> Enum.reduce([], fn({command, index}, acc) ->
       if command["enforcing"] and command["calling_convention"] == "all" do
-        [{"Enforced commands must use the bound calling convention.", "#/commands/#{index}/calling_convention"} | acc]
+        [{"Enforcing commands must use the bound calling convention.", "#/commands/#{index}/calling_convention"} | acc]
       else
         acc
       end
