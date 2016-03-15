@@ -19,6 +19,12 @@ defmodule Spanner.Bundle.ValidatorTest do
     assert validate("valid_foreign_config") == :ok
   end
 
+  test "errors when enforcing commands use the 'all' calling convention" do
+    response = validate("foreign_bad_enforcing_command")
+
+    assert response == {:error, [{"Enforced commands must use the bound calling convention.", "#/commands/0/calling_convention"}]}
+  end
+
   test "errors on bad uninstall attribute" do
     response = validate("foreign_bad_uninstall")
 

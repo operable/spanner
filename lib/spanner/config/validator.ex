@@ -8,12 +8,43 @@ defmodule Spanner.Config.Validator do
   Accepts a config map and validates.
   """
   def validate(config) do
-    # Note: The call to resolve can be expensive. Reading the documentation
-    # suggests using a genserver and keeping the resolved schema in state.
-    # Since we are just resolving once during install I think it will be ok
-    # for now. But we may want to revisit.
-    ExJsonSchema.Schema.resolve(bundle_config_schema)
-    |> ExJsonSchema.Validator.validate(config)
+    with {:ok, schema} <- resolve_schema(),
+         :ok <- ExJsonSchema.Validator.validate(schema, config),
+         :ok <- validate_command_calling_convention(config["commands"]) do
+           :ok
+    end
+  end
+
+  # Resolves our internal config schema. If the schema fails to resolve we
+  # return an error tuple.
+  # Note: The call to resolve can be expensive. Reading the documentation
+  # suggests using a genserver and keeping the resolved schema in state.
+  # Since we are just resolving once during install I think it will be ok
+  # for now. But we may want to revisit.
+  defp resolve_schema() do
+    try do
+      {:ok, ExJsonSchema.Schema.resolve(bundle_config_schema)}
+    rescue
+      err in [ExJsonSchema.Schema.InvalidSchemaError] ->
+        {:error, "Invalid config schema: #{inspect err}"}
+    end
+  end
+
+  defp validate_command_calling_convention(commands) do
+    errors = Enum.with_index(commands)
+    |> Enum.reduce([], fn({command, index}, acc) ->
+      if command["enforcing"] and command["calling_convention"] == "all" do
+        [{"Enforced commands must use the bound calling convention.", "#/commands/#{index}/calling_convention"} | acc]
+      else
+        acc
+      end
+    end)
+
+    if length(errors) > 0 do
+      {:error, errors}
+    else
+      :ok
+    end
   end
 
   # Note: This is the schema for bundle configs. For right now it's just
