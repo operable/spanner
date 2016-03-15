@@ -3,15 +3,21 @@ defmodule Spanner.Config.Validator do
   alias Piper.Permissions.Parser
 
   @moduledoc """
-  Validates bundle configs based on a built in schema.
+  Validates bundle configs using JsonSchema. This module also does some quick
+  checks on rules, verifying that they at least parse.
   """
 
   @doc """
-  Accepts a config map and validates.
+  Accepts a config map and validates. Returns `:ok` if the config is valid and
+  `{:error, err}` on error. Validate does three major checks. An error can be
+  returned during any one of these. First it does some basic validation on the
+  config using JsonSchema. Next we verify that the calling convention only occurs
+  on unenforced commands. Last we validate that any rules parse.
   """
   def validate(config) do
-    with {:ok, schema} <- resolve_schema(),
-         :ok <- ExJsonSchema.Validator.validate(schema, config),
+    with {:ok, schema} <- load_schema("bundle_config_schema"),
+         {:ok, resolved_schema} <- resolve_schema(schema),
+         :ok <- ExJsonSchema.Validator.validate(resolved_schema, config),
          :ok <- validate_command_calling_convention(config["commands"]),
          :ok <- validate_rule_parsing(config["rules"]) do
            :ok
@@ -24,9 +30,9 @@ defmodule Spanner.Config.Validator do
   # suggests using a genserver and keeping the resolved schema in state.
   # Since we are just resolving once during install I think it will be ok
   # for now. But we may want to revisit.
-  defp resolve_schema() do
+  defp resolve_schema(schema) do
     try do
-      {:ok, ExJsonSchema.Schema.resolve(bundle_config_schema)}
+      {:ok, ExJsonSchema.Schema.resolve(schema)}
     rescue
       err in [ExJsonSchema.Schema.InvalidSchemaError] ->
         {:error, "Invalid config schema: #{inspect err}"}
@@ -63,104 +69,14 @@ defmodule Spanner.Config.Validator do
   defp prepare_return([]),
     do: :ok
 
-  # Note: This is the schema for bundle configs. For right now it's just
-  # hardcoded, but we could load it from a file or the db in the future.
-  # It might be useful to load from an external source if/when the validator
-  # becomes more generalized.
-  defp bundle_config_schema() do
-    %{"$schema" => "http://json-schema.org/draft-04/schema#",
-      "title" => "Bundle Config",
-      "description" => "A config object for a bundle to be installed",
-      "type" => "object",
-      "required" => ["bundle", "commands"],
-      "properties" => %{
-        "bundle" => %{
-          "type" => "object",
-          "required" => ["name"],
-          "properties" => %{
-            "name" => %{
-              "type" => "string",
-              "description" => "The name of the bundle"
-            },
-            "install" => %{
-              "type" => "string",
-              "description" => "The path to the script to install the bundle"
-            },
-            "uninstall" => %{
-              "type" => "string",
-              "description" => "The path to the script to uninstall the bundle"
-            }
-          }
-        },
+  defp load_schema(name) do
+    # Returns absolute path to spanner/priv
+    priv_dir = :code.priv_dir(:spanner)
 
-        "templates" => %{
-          "type" => "array",
-          "items" => %{
-            "$ref" => "#/definitions/template"
-          }
-        },
-        "permissions" => %{
-          "type" => "array",
-          "items" => %{
-            "type" => "string"
-          }
-        },
-        "rules" => %{
-          "type" => "array",
-          "items" => %{
-            "type" => "string"
-          }
-        },
-        "commands" => %{
-          "type" => "array",
-          "items" => %{
-            "$ref" => "#/definitions/command"
-          },
-          "minItems" => 1,
-          "uniqueItems" => true
-        }
-      },
-      "definitions" => %{
-        "command" => %{
-          "type" => "object",
-          "required" => ["name", "executable", "version", "enforcing"],
-          "properties" => %{
-            "name" => %{"type" => "string"},
-            "version" => %{"type" => "string"},
-            "executable" => %{"type" => "string"},
-            "enforcing" => %{"type" => "boolean"},
-            "calling_convention" => %{
-              "enum" => ["bound", "all"]
-            },
-            "env_vars" => %{"type" => "object"},
-            "documentation" => %{"type" => "string"},
-            "options" => %{
-              "type" => "array",
-              "items" => %{
-                "type" => "object",
-                "properties" => %{
-                  "type" => %{
-                    "enum" => ["string", "int", "bool"]
-                  },
-                  "required" => %{"type" => "boolean"},
-                  "name" => %{"type" => "string"}
-                }
-              }
-            }
-          }
-        },
-        "template" => %{
-          "type" => "object",
-          "required" => ["name", "adapter", "path"],
-          "properties" => %{
-            "name" => %{"type" => "string"},
-            "adapter" => %{
-              "enum" => ["slack", "hipchat"]
-            },
-            "path" => %{"type" => "string"}
-          }
-        }
-      }
-     }
+    # path will be a string like
+    # /Users/kevsmith/work/cog/_build/dev/lib/spanner/priv/schemas/<name>.yaml
+    path = Path.join([priv_dir, "schemas", name <> ".yaml"])
+
+    Spanner.Config.Parser.read_from_file(path)
   end
 end
