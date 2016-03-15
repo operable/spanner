@@ -1,0 +1,23 @@
+---
+templates: []
+permissions:
+- foo:baz
+rules:
+- when command is foo:food must have foo:baz
+commands:
+- version: 0.0.1
+  options:
+  - type: string
+    required: false
+    name: format
+  name: foo
+  env_vars:
+    SERVICE_USER: testing
+  executable: "/bin/foo"
+  enforcing: false
+  calling_convention: bound
+  documentation: foo [--format=<date_format>] [date] - Returns current date or formats
+    a user-specified date
+bundle:
+  name: foo
+  type: foreign

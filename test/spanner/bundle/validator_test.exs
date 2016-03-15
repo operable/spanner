@@ -5,10 +5,10 @@ defmodule Spanner.Bundle.ValidatorTest do
   use ExUnit.Case, async: true
 
   defp get_config(name) do
-    name = name <> ".json"
+    name = name <> ".yaml"
     path = Path.join("test/assets/configs", name)
-    data = File.read!(path)
-    Poison.decode!(data)
+    {:ok, config} = Spanner.Config.Parser.read_from_file(path)
+    config
   end
 
   defp validate(name) do
@@ -28,7 +28,7 @@ defmodule Spanner.Bundle.ValidatorTest do
   test "errors when enforcing commands use the 'all' calling convention" do
     response = validate("foreign_bad_enforcing_command")
 
-    assert response == {:error, [{"Enforced commands must use the bound calling convention.", "#/commands/0/calling_convention"}]}
+    assert response == {:error, [{"Enforcing commands must use the bound calling convention.", "#/commands/0/calling_convention"}]}
   end
 
   test "errors on bad uninstall attribute" do
