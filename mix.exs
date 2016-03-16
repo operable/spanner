@@ -17,7 +17,7 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, github: "operable/piper", ref: "c0f65733209d985d0a25b9372ba4ecc62ea77f7f"},
+    [{:piper, github: "operable/piper", ref: "1eb0069bbdc17fdf0312f9f7b1be6224f16e3e70"},
      {:carrier, github: "operable/carrier", ref: "41a868cc01d1a1625354c7b56b76f6a814bbfae4"},
 
      # For yaml parsing. yaml_elixir is a wrapper around yamerl which is a native erlang lib.
