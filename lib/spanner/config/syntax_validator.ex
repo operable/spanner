@@ -14,6 +14,9 @@ defmodule Spanner.Config.SyntaxValidator do
   occurs on unenforced commands. Last we validate that all rules at least parse.
   """
   def validate(config) do
+    # Note: We could validate command calling convention with ExJsonEchema
+    # but the error that it returned was less than informative so instead
+    # we just do it manually. It may be worth revisiting in the future.
     with {:ok, schema} <- load_schema("bundle_config_schema"),
          {:ok, resolved_schema} <- resolve_schema(schema),
          :ok <- ExJsonSchema.Validator.validate(resolved_schema, config),
