@@ -6,8 +6,8 @@ defmodule Spanner.Bundle.Config do
 
   - The bundle name
   - A list of all commands in the bundle, including the command's
-    invocation name, the Elixir module that implements it, the various
-    options the command may take, and the command's version
+    invocation name, the Elixir module that implements it, and the
+    various options the command may take
   - A list of permissions the bundle will create
   - A list of initial rules for the commands in the bundle, using the
     bundle permissions.
@@ -17,8 +17,7 @@ defmodule Spanner.Bundle.Config do
       %{bundle: %{name: "foo"},
         commands: [%{module: "Spanner.Commands.AddRule",
                      name: "add-rule",
-                     options: [],
-                     version: "0.0.1"},
+                     options: []},
                    %{module: "Spanner.Commands.Admin",
                      name: "admin",
                      options: [%{name: "add", required: false, type: "bool"},
@@ -27,37 +26,30 @@ defmodule Spanner.Bundle.Config do
                                %{name: "id", required: false, type: "string"},
                                %{name: "arg0", required: false, type: "string"},
                                %{name: "permission", required: false, type: "string"},
-                               %{name: "for-command", required: false, type: "string"}],
-                     version: "0.0.1"},
+                               %{name: "for-command", required: false, type: "string"}]},
                    %{module: "Spanner.Commands.Builds",
                      name: "builds",
-                     options: [%{name: "state", required: true, type: "string"}],
-                     version: "0.0.1"},
+                     options: [%{name: "state", required: true, type: "string"}]},
                    %{module: "Spanner.Commands.Echo",
                      name: "echo",
-                     options: [],
-                     version: "0.0.1"},
+                     options: []},
                    %{module: "Spanner.Commands.Giphy",
                      name: "giphy",
-                     options: [],
-                     version: "0.0.1"},
+                     options: []},
                    %{module: "Spanner.Commands.Grant",
                      name: "grant",
                      options: [%{name: "command", required: true, type: "string"},
                                %{name: "permission", required: true, type: "string"},
-                               %{name: "to", required: true, type: "string"}], version: "0.0.1"},
+                               %{name: "to", required: true, type: "string"}]},
                    %{module: "Spanner.Commands.Greet",
                      name: "greet",
-                     options: [],
-                     version: "0.0.1"},
+                     options: []},
                    %{module: "Spanner.Commands.Math",
                      name: "math",
-                     options: [],
-                     version: "0.0.1"},
+                     options: []},
                    %{module: "Spanner.Commands.Stackoverflow",
                      name: "stackoverflow",
-                     options: [],
-                     version: "0.0.1"},
+                     options: []},
         permissions: ["foo:admin", "foo:read", "foo:write"],
         rules: ["when command is foo:add-rule must have foo:admin",
                 "when command is foo:grant must have foo:admin"]}
@@ -181,7 +173,6 @@ defmodule Spanner.Bundle.Config do
       "enforcing" => GenCommand.Base.enforcing?(module),
       "calling_convention" => GenCommand.Base.calling_convention(module),
       "execution" => GenCommand.Base.execution(module),
-      "version" => version(module),
       "options" => GenCommand.Base.options(module),
       "documentation" => case Code.get_docs(module, :moduledoc) do
                            {_line, doc} ->
@@ -202,12 +193,6 @@ defmodule Spanner.Bundle.Config do
     error_msg(error, module)
     |> Logger.error
     throw(error)
-  end
-
-  defp version(module) do
-    version = "0.0.1"
-    Logger.warn("#{inspect __MODULE__}: Using hard-coded version of `#{version}` for command `#{inspect module}`!")
-    version
   end
 
   defp valid_module(module) do
