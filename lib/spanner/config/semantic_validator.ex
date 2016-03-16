@@ -9,9 +9,9 @@ defmodule Spanner.Config.SemanticValidator do
 
 
   @doc """
-  Accepts a config map and validates semantics. Returns `:ok` if the config is
-  valid and `{:error, err}` on error.
+  Accepts a config map and validates semantics.
   """
+  @spec validate(Map.t) :: :ok | {:error, [{String.t, String.t}]}
   def validate(config) do
     verify_rules(config)
   end
@@ -41,7 +41,7 @@ defmodule Spanner.Config.SemanticValidator do
       end
     end)
     |> (fn ([]) -> :ok
-           (errors) -> {:error, {:bad_rules, errors}}
+           (errors) -> {:error, errors}
         end).()
   end
 

@@ -7,12 +7,13 @@ defmodule Spanner.Config.SyntaxValidator do
   """
 
   @doc """
-  Accepts a config map and validates syntax. Returns `:ok` if the config is
-  valid and `{:error, err}` on error. Validate does three major checks. An error
-  can be returned during any one of these. First it does some basic validation on
-  the config using JsonSchema. Next we verify that the calling convention only
-  occurs on unenforced commands. Last we validate that all rules at least parse.
+  Accepts a config map and validates syntax. Validate does three major checks.
+  An error can be returned during any one of these. First it does some basic
+  validation on the config using JsonSchema. Next we verify that the calling
+  convention only occurs on unenforced commands. Last we validate that all
+  rules at least parse.
   """
+  @spec validate(Map.t) :: :ok | {:ok, [{String.t, String.t}]}
   def validate(config) do
     # Note: We could validate command calling convention with ExJsonEchema
     # but the error that it returned was less than informative so instead
