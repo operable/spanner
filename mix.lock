@@ -1,5 +1,5 @@
 %{"adz": {:git, "https://github.com/operable/adz.git", "601ceb3a19716ea635a7cd83c05f5593f5cf6c40", [tag: "0.2"]},
-  "carrier": {:git, "https://github.com/operable/carrier.git", "41a868cc01d1a1625354c7b56b76f6a814bbfae4", [ref: "41a868cc01d1a1625354c7b56b76f6a814bbfae4"]},
+  "carrier": {:git, "https://github.com/operable/carrier.git", "b62433b3c8f2c97d9720675fd6f44cb1bb2808f3", [ref: "b62433b3c8f2c97d9720675fd6f44cb1bb2808f3"]},
   "emqttc": {:git, "https://github.com/operable/emqttc.git", "dc36f593822f8e01771a7edc780441fdfb2f7b15", [tag: "cog-0.2"]},
   "enacl": {:git, "https://github.com/jlouis/enacl.git", "03f93c4f7d0cb56b5a86b445cb004a3a8de2278b", [tag: "0.15.0"]},
   "ex_json_schema": {:hex, :ex_json_schema, "0.3.1"},
