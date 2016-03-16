@@ -1,18 +1,17 @@
-defmodule Spanner.Config.Validator do
+defmodule Spanner.Config.SyntaxValidator do
 
   alias Piper.Permissions.Parser
 
   @moduledoc """
-  Validates bundle configs using JsonSchema. This module also does some quick
-  checks on rules, verifying that they at least parse.
+  Validates bundle config syntax leveraging JsonSchema.
   """
 
   @doc """
-  Accepts a config map and validates. Returns `:ok` if the config is valid and
-  `{:error, err}` on error. Validate does three major checks. An error can be
-  returned during any one of these. First it does some basic validation on the
-  config using JsonSchema. Next we verify that the calling convention only occurs
-  on unenforced commands. Last we validate that all rules at least parse.
+  Accepts a config map and validates syntax. Returns `:ok` if the config is
+  valid and `{:error, err}` on error. Validate does three major checks. An error
+  can be returned during any one of these. First it does some basic validation on
+  the config using JsonSchema. Next we verify that the calling convention only
+  occurs on unenforced commands. Last we validate that all rules at least parse.
   """
   def validate(config) do
     with {:ok, schema} <- load_schema("bundle_config_schema"),

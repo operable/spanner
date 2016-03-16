@@ -7,4 +7,12 @@ defmodule Spanner.Config do
 
   def dynamic_file_name(),
     do: @dynamic_config_file
+
+  def validate(config) do
+    with :ok <- Spanner.Config.SyntaxValidator.validate(config),
+         :ok <- Spanner.Config.SemanticValidator.validate(config) do
+      :ok
+    end
+  end
+
 end

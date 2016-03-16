@@ -12,7 +12,7 @@ defmodule Spanner.Bundle.ValidatorTest do
   end
 
   defp validate(name) do
-    Config.Validator.validate(get_config(name))
+    Config.validate(get_config(name))
   end
 
   test "validates valid foreign command config" do
