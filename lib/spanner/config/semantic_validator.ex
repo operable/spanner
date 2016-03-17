@@ -14,8 +14,8 @@ defmodule Spanner.Config.SemanticValidator do
   @spec validate(Map.t) :: :ok | {:error, [{String.t, String.t}]}
   def validate(config) do
     rules       = Map.get(config, "rules", [])
-    bundle      = Map.get(config, "bundle")
-    commands    = Map.get(config, "commands")
+    bundle      = Map.fetch!(config, "bundle")
+    commands    = Map.fetch!(config, "commands")
     permissions = Map.get(config, "permissions", [])
 
     errors = rules
