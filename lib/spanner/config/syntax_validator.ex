@@ -54,7 +54,7 @@ defmodule Spanner.Config.SyntaxValidator do
     |> prepare_return
   end
 
-  defp validate_rule_parsing([]),
+  defp validate_rule_parsing(nil),
     do: :ok
   defp validate_rule_parsing(rules) do
     Enum.with_index(rules)

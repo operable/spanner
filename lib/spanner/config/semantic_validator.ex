@@ -13,10 +13,10 @@ defmodule Spanner.Config.SemanticValidator do
   """
   @spec validate(Map.t) :: :ok | {:error, [{String.t, String.t}]}
   def validate(config) do
-    rules       = Map.fetch!(config, "rules")
-    bundle      = Map.fetch!(config, "bundle")
-    commands    = Map.fetch!(config, "commands")
-    permissions = Map.fetch!(config, "permissions")
+    rules       = Map.get(config, "rules", [])
+    bundle      = Map.get(config, "bundle")
+    commands    = Map.get(config, "commands")
+    permissions = Map.get(config, "permissions", [])
 
     errors = rules
     |> Enum.with_index
