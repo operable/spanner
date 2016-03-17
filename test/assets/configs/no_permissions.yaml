@@ -1,0 +1,22 @@
+---
+templates: []
+rules:
+- when command is date:date must have date:view
+commands:
+- version: 0.0.1
+  options:
+  - type: string
+    required: false
+    name: format
+  name: date
+  env_vars:
+    SERVICE_USER: testing
+  executable: "/bin/date"
+  enforcing: false
+  calling_convention: bound
+  documentation: date [--format=<date_format>] [date] - Returns current date or formats
+    a user-specified date
+bundle:
+  name: date
+  type: foreign
+
