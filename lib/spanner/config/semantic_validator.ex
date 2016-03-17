@@ -26,7 +26,7 @@ defmodule Spanner.Config.SemanticValidator do
       [] ->
         :ok
       errors ->
-        {:errors, errors}
+        {:error, errors}
     end
   end
 

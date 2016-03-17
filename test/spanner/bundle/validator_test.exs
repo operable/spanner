@@ -15,6 +15,24 @@ defmodule Spanner.Bundle.ValidatorTest do
     Config.validate(get_config(name))
   end
 
+  test "templates should be optional" do
+    assert validate("no_templates") == :ok
+  end
+
+  test "rules should be optional" do
+    assert validate("no_rules") == :ok
+  end
+
+  test "permissions should be optional when there are no rules" do
+    assert validate("no_perms_or_rules") == :ok
+  end
+
+  test "errors when permissions don't match rules" do
+    response = validate("no_permissions")
+
+    assert response == {:error, [{"The permission 'date:view' is not in the list of permissions.", "#/rules/0"}]}
+  end
+
   test "validates valid foreign command config" do
     assert validate("valid_foreign_config") == :ok
   end
