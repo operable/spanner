@@ -1,6 +1,6 @@
 defmodule Spanner do
   @bundle_extension ".cog"
-  @skinny_bundle_extension ".yaml"
+  @skinny_bundle_extension ".yml"
 
   def bundle_extension(),
     do: @bundle_extension
