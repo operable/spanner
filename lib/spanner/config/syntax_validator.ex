@@ -54,6 +54,8 @@ defmodule Spanner.Config.SyntaxValidator do
     |> prepare_return
   end
 
+  defp validate_rule_parsing([]),
+    do: :ok
   defp validate_rule_parsing(rules) do
     Enum.with_index(rules)
     |> Enum.reduce([], fn({rule, index}, acc) ->
