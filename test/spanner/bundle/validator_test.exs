@@ -19,6 +19,10 @@ defmodule Spanner.Bundle.ValidatorTest do
     assert validate("no_templates") == :ok
   end
 
+  test "commands can only have 'once' or 'multiple' execution types" do
+    assert validate("bad_execution_type") == {:error, [{"Value \"multi\" is not allowed in enum.", "#/commands/0/execution"}]}
+  end
+
   test "rules should be optional" do
     assert validate("no_rules") == :ok
   end
