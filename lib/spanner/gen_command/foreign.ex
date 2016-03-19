@@ -61,8 +61,35 @@ defmodule Spanner.GenCommand.Foreign do
 
   def handle_message(request, %__MODULE__{executable: exe, bundle_dir: bundle_dir, base_env: base}=state) do
     calling_env = Map.to_list(Map.merge(base, build_calling_env(request, state)))
-    result = Porcelain.exec(exe, [], out: :string, err: :string, dir: bundle_dir, env: calling_env)
+    command_input = build_stdin(request.cog_env)
+    opts = [in: command_input, out: :string, err: :string, dir: bundle_dir, env: calling_env]
+
+    result =
+      case Application.get_env(:porcelain, :driver_internal) do
+        Porcelain.Driver.Goon ->
+          goon_exec(exe, opts)
+        _ ->
+          basic_exec(exe, get_pipeline_id(request), opts)
+      end
+
     send_reply(request, result, state)
+  end
+
+  defp basic_exec(exe, pipeline_id, opts) do
+    stdin_file = Path.join([opts[:dir], pipeline_id <> ".stdin"]) |> Path.expand
+    safe_exe = sanitize_executable(exe)
+    command_line = Enum.join([safe_exe, "<", stdin_file], " ")
+
+    try do
+      File.open(stdin_file, [:write], fn(file) -> IO.write(file, opts[:in]) end)
+      Porcelain.shell(command_line, Dict.delete(opts, :in))
+    after
+      File.rm(stdin_file)
+    end
+  end
+
+  defp goon_exec(exe, opts) do
+    Porcelain.exec(exe, [], opts)
   end
 
   defp send_reply(request, %Porcelain.Result{status: 0, out: out}, state) do
@@ -222,4 +249,15 @@ defmodule Spanner.GenCommand.Foreign do
   end
   defp filter_env({key, _}), do: {key, false}
 
+  defp build_stdin([]), do: nil
+  defp build_stdin(map) when is_map(map) and map_size(map) == 0, do: nil
+  defp build_stdin([map]) when is_map(map) and map_size(map) == 0, do: nil
+  defp build_stdin(env) when is_map(env) or is_list(env), do: Poison.encode!(env)
+  defp build_stdin(_), do: nil
+
+  # Strip any single quotes from the executable name, then wrap it in single quotes
+  # as a final barrier to prevent shell metacharacters from sneaking in.
+  defp sanitize_executable(exe) do
+    "'" <> String.replace(exe, "'", "") <> "'"
+  end
 end
