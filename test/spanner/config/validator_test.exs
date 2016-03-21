@@ -39,7 +39,21 @@ defmodule Spanner.Config.Validator.Test do
   end)
 
   test "A bad execution type should throw an error" do
-    assert validate("bad_execution_type") == {:error, [{"Value \"multi\" is not allowed in enum.", "#/commands/0/execution"}]}
+    bad_execution_config =
+      %{"bundle" => %{
+        "name" => "date",
+        "type" => "foreign"},
+      "commands" => [%{
+        "version" => "0.1.1",
+        "name" => "date",
+        "executable" => "/bin/date",
+        "execution" => "multi",
+        "enforcing" => false,
+        "calling_convention" => "bound"}]}
+
+    response = Config.validate(bad_execution_config)
+
+    assert response == {:error, [{"Value \"multi\" is not allowed in enum.", "#/commands/0/execution"}]}
   end
 
   test "rules should be optional" do
