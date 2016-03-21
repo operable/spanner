@@ -1,8 +1,7 @@
-defmodule Spanner.Bundle.ValidatorTest do
-
+defmodule Spanner.Config.Validator.Test do
+  use ExUnit.Case, async: true
   alias Spanner.Config
 
-  use ExUnit.Case, async: true
 
   defp get_config(name) do
     name = name <> ".yaml"
@@ -19,7 +18,27 @@ defmodule Spanner.Bundle.ValidatorTest do
     assert validate("no_templates") == :ok
   end
 
-  test "commands can only have 'once' or 'multiple' execution types" do
+  Enum.each(["once", "multiple"], fn(execution) ->
+    test "an execution value of `#{execution}` is valid" do
+      config =
+        %{"bundle" => %{
+          "name" => "date",
+          "type" => "foreign"},
+        "commands" => [%{
+          "version" => "0.1.1",
+          "name" => "date",
+          "executable" => "/bin/date",
+          "execution" => unquote(execution),
+          "enforcing" => false,
+          "calling_convention" => "bound"}]}
+
+      response = Config.validate(config)
+
+      assert response == :ok
+    end
+  end)
+
+  test "A bad execution type should throw an error" do
     assert validate("bad_execution_type") == {:error, [{"Value \"multi\" is not allowed in enum.", "#/commands/0/execution"}]}
   end
 
