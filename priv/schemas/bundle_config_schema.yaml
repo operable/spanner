@@ -54,6 +54,10 @@ definitions:
         type: string
       executable:
         type: string
+      execution:
+        enum:
+        - multiple
+        - once
       enforcing:
         type: boolean
       calling_convention:
