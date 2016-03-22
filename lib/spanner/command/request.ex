@@ -5,7 +5,7 @@ defmodule Spanner.Command.Request do
 
   require Logger
 
-  defmarshalled [:room, :requestor, :command, :args, :options, :command_config, :reply_to, :cog_env]
+  defmarshalled [:room, :requestor, :user, :command, :args, :options, :command_config, :reply_to, :cog_env]
 
   defp validate(request) do
     cond do
@@ -55,13 +55,5 @@ defmodule Spanner.Command.Request do
       false -> {:ok, ""}
     end
   end
-
-end
-
-defmodule Spanner.Command.Response do
-
-  use Spanner.Marshalled
-
-  defmarshalled [:room, :status, :status_message, :body, :bundle, :template]
 
 end
