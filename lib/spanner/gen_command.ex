@@ -156,19 +156,14 @@ defmodule Spanner.GenCommand do
 
   def handle_info({:publish, topic, message},
                   %__MODULE__{topic: topic, cb_module: cb_module, bundle_name: bundle}=state) do
-    case Carrier.CredentialManager.verify_signed_message(message) do
-      {true, payload} ->
-        case Command.Request.decode(payload) do
-          {:ok, req} ->
-            process_message(req, cb_module, bundle, state)
-          {:error, error} ->
-            # error is a map; turn it into a string for now to
-            # simplify the error reply contract.
-            {:noreply, send_error_reply(inspect(error), payload["reply_to"], state)}
-        end
-      false ->
-        Logger.error("Message signature not verified! #{inspect message}")
-        {:noreply, state}
+    payload = Poison.decode!(message)
+    case Command.Request.decode(payload) do
+      {:ok, req} ->
+        process_message(req, cb_module, bundle, state)
+      {:error, error} ->
+        # error is a map; turn it into a string for now to
+        # simplify the error reply contract.
+        {:noreply, send_error_reply(inspect(error), payload["reply_to"], state)}
     end
   end
   def handle_info({:EXIT, conn, {:shutdown, reason}}, %__MODULE__{mq_conn: conn}=state) do
