@@ -13,7 +13,6 @@ commands:
     SERVICE_USER: testing
   executable: "/bin/date"
   enforcing: true
-  calling_convention: all
   documentation: date [--format=<date_format>] [date] - Returns current date or formats
     a user-specified date
 bundle:

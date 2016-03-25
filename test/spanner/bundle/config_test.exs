@@ -32,7 +32,7 @@ defmodule Spanner.Bundle.Config.Test do
   end
 
   defmodule UnboundCommand do
-    use GenCommand.Base, name: "unbound-command", enforcing: false, bundle: "testing", calling_convention: :all
+    use GenCommand.Base, name: "unbound-command", enforcing: false, bundle: "testing"
 
     def handle_message(_,_), do: {:reply, "blah", "blah", "blah"}
   end
@@ -59,14 +59,12 @@ defmodule Spanner.Bundle.Config.Test do
              "commands" => [%{"name" => "command-without-options",
                               "documentation" => nil,
                               "enforcing" => true,
-                              "calling_convention" => "bound",
                               "execution" => "multiple",
                               "options" => [],
                               "module" => "Spanner.Bundle.Config.Test.CommandWithoutOptions"},
                             %{"name" => "command-with-options",
                               "documentation" => nil,
                               "enforcing" => true,
-                              "calling_convention" => "bound",
                               "execution" => "multiple",
                               "options" => [%{"name" => "option_1",
                                               "type" => "bool",
@@ -75,21 +73,18 @@ defmodule Spanner.Bundle.Config.Test do
                             %{"name" => "unenforced-command",
                               "documentation" => nil,
                               "enforcing" => false,
-                              "calling_convention" => "bound",
                               "execution" => "multiple",
                               "options" => [],
                               "module" => "Spanner.Bundle.Config.Test.UnenforcedCommand"},
                             %{"name" => "unbound-command",
                               "documentation" => nil,
                               "enforcing" => false,
-                              "calling_convention" => "all",
                               "execution" => "multiple",
                               "options" => [],
                               "module" => "Spanner.Bundle.Config.Test.UnboundCommand"},
                             %{"name" => "execution-once-command",
                               "documentation" => nil,
                               "enforcing" => false,
-                              "calling_convention" => "bound",
                               "execution" => "once",
                               "options" => [],
                               "module" => "Spanner.Bundle.Config.Test.ExecutionOnceCommand"}],

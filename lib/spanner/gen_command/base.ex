@@ -86,7 +86,7 @@ defmodule Spanner.GenCommand.Base do
   the limitation on commands that have no permissions.
 
       defmodule MyCommand do
-        use #{inspect __MODULE__}, enforcing: false, calling_convention: :all
+        use #{inspect __MODULE__}, enforcing: false
 
         # ...
 
@@ -170,7 +170,6 @@ defmodule Spanner.GenCommand.Base do
     bundle_name = Keyword.fetch!(opts, :bundle)
     command_name = Keyword.get(opts, :name, default_name)
     enforcing = ensure_valid(opts, :enforcing, [true, false], true, command_name)
-    calling_convention = Atom.to_string(ensure_valid(opts, :calling_convention, [:all, :bound], :bound, command_name))
     execution = Atom.to_string(ensure_valid(opts, :execution, [:once, :multiple], :multiple, command_name))
 
     quote location: :keep do
@@ -186,7 +185,6 @@ defmodule Spanner.GenCommand.Base do
       Module.register_attribute(__MODULE__, :raw_rules, accumulate: true, persist: false)
       Module.register_attribute(__MODULE__, :rules, accumulate: true, persist: true)
       Module.register_attribute(__MODULE__, :enforcing, accumulate: false, persist: true)
-      Module.register_attribute(__MODULE__, :calling_convention, accumulate: false, persist: true)
       Module.register_attribute(__MODULE__, :execution, accumulate: false, persist: true)
 
       import unquote(__MODULE__), only: [option: 1,
@@ -197,7 +195,6 @@ defmodule Spanner.GenCommand.Base do
       @bundle_name unquote(bundle_name)
       @command_name unquote(command_name)
       @enforcing unquote(enforcing)
-      @calling_convention unquote(calling_convention)
       @execution unquote(execution)
 
       def init(_args),
@@ -266,13 +263,6 @@ defmodule Spanner.GenCommand.Base do
   """
   def enforcing?(module) do
     attr_value(module, :enforcing) == true
-  end
-
-  @doc """
-  Returns the calling convention of the command
-  """
-  def calling_convention(module) do
-    attr_value(module, :calling_convention)
   end
 
   @doc """

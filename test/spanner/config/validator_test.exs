@@ -29,8 +29,7 @@ defmodule Spanner.Config.Validator.Test do
           "name" => "date",
           "executable" => "/bin/date",
           "execution" => unquote(execution),
-          "enforcing" => false,
-          "calling_convention" => "bound"}]}
+          "enforcing" => false}]}
 
       response = Config.validate(config)
 
@@ -48,8 +47,7 @@ defmodule Spanner.Config.Validator.Test do
         "name" => "date",
         "executable" => "/bin/date",
         "execution" => "multi",
-        "enforcing" => false,
-        "calling_convention" => "bound"}]}
+        "enforcing" => false}]}
 
     response = Config.validate(bad_execution_config)
 
@@ -78,12 +76,6 @@ defmodule Spanner.Config.Validator.Test do
     response = validate("foreign_bad_rule")
 
     assert response == {:error, [{"(Line: 1, Col: 34) References to permissions must start with a command bundle name or \"site\".", "#/rules/0"}]}
-  end
-
-  test "errors when enforcing commands use the 'all' calling convention" do
-    response = validate("foreign_bad_enforcing_command")
-
-    assert response == {:error, [{"Enforcing commands must use the bound calling convention.", "#/commands/0/calling_convention"}]}
   end
 
   test "errors on bad uninstall attribute" do
