@@ -163,7 +163,8 @@ defmodule Spanner.GenCommand do
       {:error, error} ->
         # error is a map; turn it into a string for now to
         # simplify the error reply contract.
-        {:noreply, send_error_reply(inspect(error), payload["reply_to"], state)}
+        send_error_reply(inspect(error), payload["reply_to"], state)
+        {:noreply, state}
     end
   end
   def handle_info({:EXIT, conn, {:shutdown, reason}}, %__MODULE__{mq_conn: conn}=state) do
@@ -184,13 +185,16 @@ defmodule Spanner.GenCommand do
       case cb_module.handle_message(req, state.cb_state) do
         {:reply, reply_to, template, reply, cb_state} ->
           new_state = %{state | cb_state: cb_state}
-          {:noreply, send_ok_reply(reply, {bundle, template}, reply_to, new_state)}
+          send_ok_reply(reply, {bundle, template}, reply_to, new_state)
+          {:noreply, new_state}
         {:reply, reply_to, reply, cb_state} ->
           new_state = %{state | cb_state: cb_state}
-          {:noreply, send_ok_reply(reply, reply_to, new_state)}
+          send_ok_reply(reply, reply_to, new_state)
+          {:noreply, new_state}
         {:error, reply_to, error_message, cb_state} ->
           new_state = %{state | cb_state: cb_state}
-          {:noreply, send_error_reply(error_message, reply_to, new_state)}
+          send_error_reply(error_message, reply_to, new_state)
+          {:noreply, new_state}
         {:noreply, cb_state} ->
           new_state = %{state | cb_state: cb_state}
           {:noreply, new_state}
@@ -198,7 +202,8 @@ defmodule Spanner.GenCommand do
     rescue
       error ->
         message = format_error_message(req.command, error, System.stacktrace)
-        {:noreply, send_error_reply(message, req.reply_to, state)}
+        send_error_reply(message, req.reply_to, state)
+        {:noreply, state}
     end
   end
 
@@ -207,7 +212,6 @@ defmodule Spanner.GenCommand do
   defp send_error_reply(error_message, reply_to, state) when is_binary(error_message) do
     resp = Command.Response.encode!(%Command.Response{status: :error, status_message: error_message})
     Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
-    state
   end
 
   ########################################################################
@@ -215,13 +219,11 @@ defmodule Spanner.GenCommand do
   defp send_ok_reply(reply, {bundle, template}, reply_to, state) when is_map(reply) or is_list(reply) or is_nil(reply) do
     resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply, bundle: bundle, template: template})
     Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
-    state
   end
 
   defp send_ok_reply(reply, reply_to, state) when is_map(reply) or is_list(reply) or is_nil(reply) do
     resp = Command.Response.encode!(%Command.Response{status: :ok, body: reply})
     Carrier.Messaging.Connection.publish(state.mq_conn, resp, routed_by: reply_to)
-    state
   end
   defp send_ok_reply(reply, reply_to, state),
     do: send_ok_reply(%{body: [reply]}, reply_to, state)
