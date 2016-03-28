@@ -9,9 +9,8 @@ defmodule Spanner.Config.SyntaxValidator do
   @doc """
   Accepts a config map and validates syntax. Validate does three major checks.
   An error can be returned during any one of these. First it does some basic
-  validation on the config using JsonSchema. Next we verify that the calling
-  convention only occurs on unenforced commands. Last we validate that all
-  rules at least parse.
+  validation on the config using JsonSchema. Last we validate that all rules
+  at least parse.
   """
   @spec validate(Map.t) :: :ok | {:ok, [{String.t, String.t}]}
   def validate(config) do
@@ -21,7 +20,6 @@ defmodule Spanner.Config.SyntaxValidator do
     with {:ok, schema} <- load_schema("bundle_config_schema"),
          {:ok, resolved_schema} <- resolve_schema(schema),
          :ok <- ExJsonSchema.Validator.validate(resolved_schema, config),
-         :ok <- validate_command_calling_convention(config["commands"]),
          :ok <- validate_rule_parsing(config["rules"]) do
            :ok
     end
@@ -40,18 +38,6 @@ defmodule Spanner.Config.SyntaxValidator do
       err in [ExJsonSchema.Schema.InvalidSchemaError] ->
         {:error, "Invalid config schema: #{inspect err}"}
     end
-  end
-
-  defp validate_command_calling_convention(commands) do
-    Enum.with_index(commands)
-    |> Enum.reduce([], fn({command, index}, acc) ->
-      if command["enforcing"] and command["calling_convention"] == "all" do
-        [{"Enforcing commands must use the bound calling convention.", "#/commands/#{index}/calling_convention"} | acc]
-      else
-        acc
-      end
-    end)
-    |> prepare_return
   end
 
   defp validate_rule_parsing(nil),

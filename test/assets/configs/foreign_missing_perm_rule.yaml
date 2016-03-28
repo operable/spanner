@@ -15,7 +15,6 @@ commands:
   executable: "/bin/date"
   enforcing: true
   documentation: Some foo documentation for foo:bar
-  calling_convention: bound
 bundle:
   type: foreign
   name: foo

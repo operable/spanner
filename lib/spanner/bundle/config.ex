@@ -158,20 +158,15 @@ defmodule Spanner.Bundle.Config do
   # Extract all commands from `modules` and generate configuration
   # maps for them
   defp gen_commands(modules) do
-    %{"commands" => Enum.map(only_commands(modules), &command_map!/1)}
+    %{"commands" => Enum.map(only_commands(modules), &command_map/1)}
   end
 
   defp only_commands(modules),
     do: Enum.filter(modules, &GenCommand.Base.used_base?/1)
 
-  defp command_map!(module) when is_atom(module) do
-    valid_module(module)
-    |> command_map!
-  end
-  defp command_map!({:ok, module}) do
+  defp command_map(module) do
     %{"name" => GenCommand.Base.command_name(module),
       "enforcing" => GenCommand.Base.enforcing?(module),
-      "calling_convention" => GenCommand.Base.calling_convention(module),
       "execution" => GenCommand.Base.execution(module),
       "options" => GenCommand.Base.options(module),
       "documentation" => case Code.get_docs(module, :moduledoc) do
@@ -189,29 +184,5 @@ defmodule Spanner.Bundle.Config do
                          end,
       "module" => inspect(module)}
   end
-  defp command_map!({:error, error, module}) do
-    error_msg(error, module)
-    |> Logger.error
-    throw(error)
-  end
 
-  defp valid_module(module) do
-    if mismatched_calling_convention?(module) do
-      {:error, :mismatched_calling_convention, module}
-    else
-      {:ok, module}
-    end
-  end
-
-  defp mismatched_calling_convention?(module) do
-    cond do
-      GenCommand.Base.calling_convention(module) == :all && GenCommand.Base.enforcing?(module) == true ->
-        true
-      true ->
-        false
-    end
-  end
-
-  defp error_msg(:mismatched_calling_convention, module),
-    do: "Error: Mismatched calling convention in #{inspect module}. 'all' can only be used when 'enforcing' is set to false."
 end

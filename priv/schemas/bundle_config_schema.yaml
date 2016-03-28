@@ -60,10 +60,6 @@ definitions:
         - once
       enforcing:
         type: boolean
-      calling_convention:
-        enum:
-        - bound
-        - all
       env_vars:
         type: object
       documentation:
