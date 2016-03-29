@@ -1,18 +1,9 @@
 defmodule Spanner do
   @bundle_extension ".cog"
-  @skinny_bundle_extension ".yaml"
 
   @doc "Getter for the bundle extension"
   def bundle_extension(),
     do: @bundle_extension
-
-  @doc """
-  Getter for the skinny bundle extension. Technically skinny bundles can use any
-  extension in #{Spanner.Config.config_extensions}, but internally it will always
-  be converted to this extension.
-  """
-  def skinny_bundle_extension(),
-    do: @skinny_bundle_extension
 
   @doc "Getter for skinny bundle extensions"
   def skinny_bundle_extensions(),
