@@ -12,6 +12,10 @@ defmodule Spanner.Config do
   def config_extensions(),
     do: @config_extensions
 
+  def config_file?(filename) do
+    String.ends_with?(filename, config_extensions)
+  end
+
   def validate(config) do
     with :ok <- Spanner.Config.SyntaxValidator.validate(config),
          :ok <- Spanner.Config.SemanticValidator.validate(config) do
