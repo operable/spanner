@@ -1,10 +1,6 @@
 defmodule Spanner.Config do
   @config_extensions [".yaml", ".yml", ".json"]
   @config_file "config"
-  @dynamic_config_file "config.yaml"
-
-  def dynamic_file_name(),
-    do: @dynamic_config_file
 
   def config_extensions(),
     do: @config_extensions

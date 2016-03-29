@@ -33,7 +33,7 @@ defmodule Spanner.Command.Request do
       {:ok, ""} -> {:ok, %{}}
       {:ok, config} -> {:ok, config}
       {:error, error} ->
-        err = "Unable to read the command config file '#{Config.dynamic_file_name}' for the command '#{request.command}'. #{inspect error}"
+        err = "Unable to read the command config file for the command '#{request.command}'. #{inspect error}"
         Logger.error(err)
         {:error, err}
     end
@@ -48,10 +48,15 @@ defmodule Spanner.Command.Request do
 
   defp read_config(request, config_path) do
     [bundle, _cmd] = String.split(request.command, ":", parts: 2)
-    cmd_config_file = Path.join([config_path, bundle, Config.dynamic_file_name()])
-    case File.exists?(cmd_config_file) do
+    cmd_config_dir = Path.join([config_path, bundle])
+
+    case File.dir?(cmd_config_dir) do
       true ->
-        Config.Parser.read_from_file(cmd_config_file)
+        with {:ok, files} <- File.ls(cmd_config_dir),
+             cmd_config_file when is_binary(cmd_config_file) <- Enum.find(files, {:ok, ""}, &Spanner.Config.config_file?/1) do
+               Path.join([cmd_config_dir, cmd_config_file])
+               |> Config.Parser.read_from_file
+        end
       false -> {:ok, ""}
     end
   end
