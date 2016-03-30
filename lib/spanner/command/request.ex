@@ -32,6 +32,14 @@ defmodule Spanner.Command.Request do
     case open_config(request) do
       {:ok, ""} -> {:ok, %{}}
       {:ok, config} -> {:ok, config}
+      {:not_found, cmd_config_dir} ->
+        msg = "A directory exists for dynamic config, '#{cmd_config_dir}', but it contains no configs."
+        Logger.warn(msg)
+        {:ok, %{}}
+      {:multiple_configs, config, config_path} ->
+        msg = "Multiple dynamic config files exist. Using '#{config_path}'."
+        Logger.warn(msg)
+        {:ok, config}
       {:error, error} ->
         err = "Unable to read the command config file for the command '#{request.command}'. #{inspect error}"
         Logger.error(err)
@@ -52,10 +60,20 @@ defmodule Spanner.Command.Request do
 
     case File.dir?(cmd_config_dir) do
       true ->
-        with {:ok, files} <- File.ls(cmd_config_dir),
-             cmd_config_file when is_binary(cmd_config_file) <- Enum.find(files, {:ok, ""}, &Spanner.Config.config_file?/1) do
-               Path.join([cmd_config_dir, cmd_config_file])
-               |> Config.Parser.read_from_file
+        case Config.find_config(cmd_config_dir) do
+          [] ->
+            # If a directory for dynamic config exists but there are no config files
+            # we should warn the user
+            {:not_found, cmd_config_dir}
+          [config_path | _] ->
+            # If multiple configs are found we should warn the user
+            with {:ok, config} <- Config.Parser.read_from_file(config_path) do
+              {:multiple_configs, config, config_path}
+            end
+          [config_path | []] ->
+            with {:ok, config} <- Config.parser.read_from_file(config_path) do
+              {:ok, config}
+            end
         end
       false -> {:ok, ""}
     end
