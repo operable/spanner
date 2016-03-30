@@ -13,10 +13,13 @@ defmodule Spanner do
   Returns the type of bundle ':simple' or ':standard' based on the extension
   """
   def bundle_type(bundle_path) do
-    if String.ends_with?(bundle_path, skinny_bundle_extensions) do
-      :simple
-    else
-      :standard
+    cond do
+      String.ends_with?(bundle_path, skinny_bundle_extensions) ->
+        :simple
+      String.ends_with?(bundle_path, bundle_extension) ->
+        :standard
+      true ->
+        {:error, "Not a bundle file"}
     end
   end
 
@@ -25,11 +28,17 @@ defmodule Spanner do
     case bundle_type(path) do
       :simple -> true
       :standard -> false
+      {:error, _} -> false
     end
   end
 
   @doc "Whether or not the path refers to a standard bundle"
-  def standard_bundle?(path),
-    do: String.ends_with?(path, @bundle_extension)
+  def standard_bundle?(path) do
+    case bundle_type(path) do
+      :simple -> false
+      :standard -> true
+      {:error, _} -> false
+    end
+  end
 
 end
