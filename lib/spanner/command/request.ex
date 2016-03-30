@@ -30,10 +30,18 @@ defmodule Spanner.Command.Request do
 
   defp get_config(request) do
     case open_config(request) do
-      {:ok, ""} -> {:ok, %{}}
+      :dir_not_found -> {:ok, %{}}
       {:ok, config} -> {:ok, config}
+      {:not_found, cmd_config_dir} ->
+        msg = "A directory exists for dynamic config, '#{cmd_config_dir}', but it contains no configs."
+        Logger.warn(msg)
+        {:ok, %{}}
+      {:multiple_configs, config, config_path} ->
+        msg = "Multiple dynamic config files exist. Using '#{config_path}'."
+        Logger.warn(msg)
+        {:ok, config}
       {:error, error} ->
-        err = "Unable to read the command config file '#{Config.dynamic_file_name}' for the command '#{request.command}'. #{inspect error}"
+        err = "Unable to read the command config file for the command '#{request.command}'. #{inspect error}"
         Logger.error(err)
         {:error, err}
     end
@@ -48,11 +56,24 @@ defmodule Spanner.Command.Request do
 
   defp read_config(request, config_path) do
     [bundle, _cmd] = String.split(request.command, ":", parts: 2)
-    cmd_config_file = Path.join([config_path, bundle, Config.dynamic_file_name()])
-    case File.exists?(cmd_config_file) do
+    cmd_config_dir = Path.join([config_path, bundle])
+
+    case File.dir?(cmd_config_dir) do
       true ->
-        Config.Parser.read_from_file(cmd_config_file)
-      false -> {:ok, ""}
+        case Config.find_config(cmd_config_dir) do
+          [] ->
+            # If a directory for dynamic config exists but there are no config files
+            # we should warn the user
+            {:not_found, cmd_config_dir}
+          [config_path] ->
+            Config.parser.read_from_file(config_path)
+          [config_path | _] ->
+            # If multiple configs are found we should warn the user
+            with {:ok, config} <- Config.Parser.read_from_file(config_path) do
+              {:multiple_configs, config, config_path}
+            end
+        end
+      false -> :dir_not_found
     end
   end
 
