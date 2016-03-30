@@ -65,14 +65,14 @@ defmodule Spanner.Command.Request do
             # If a directory for dynamic config exists but there are no config files
             # we should warn the user
             {:not_found, cmd_config_dir}
+          [config_path | []] ->
+            with {:ok, config} <- Config.parser.read_from_file(config_path) do
+              {:ok, config}
+            end
           [config_path | _] ->
             # If multiple configs are found we should warn the user
             with {:ok, config} <- Config.Parser.read_from_file(config_path) do
               {:multiple_configs, config, config_path}
-            end
-          [config_path | []] ->
-            with {:ok, config} <- Config.parser.read_from_file(config_path) do
-              {:ok, config}
             end
         end
       false -> {:ok, ""}
