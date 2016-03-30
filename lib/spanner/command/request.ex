@@ -30,7 +30,7 @@ defmodule Spanner.Command.Request do
 
   defp get_config(request) do
     case open_config(request) do
-      {:ok, ""} -> {:ok, %{}}
+      :dir_not_found -> {:ok, %{}}
       {:ok, config} -> {:ok, config}
       {:not_found, cmd_config_dir} ->
         msg = "A directory exists for dynamic config, '#{cmd_config_dir}', but it contains no configs."
@@ -75,7 +75,7 @@ defmodule Spanner.Command.Request do
               {:multiple_configs, config, config_path}
             end
         end
-      false -> {:ok, ""}
+      false -> :dir_not_found
     end
   end
 
