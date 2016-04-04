@@ -85,23 +85,23 @@ defmodule Spanner.GenCommand.Base.Test do
   end
 
   test "commands can have no options" do
-    assert [] = GenCommand.Base.options(TestCommand)
+    assert %{} = GenCommand.Base.options(TestCommand)
   end
 
   test "commands can have one option" do
-    assert [%{"name" => "my_option", "type" => "string", "required" => true}] = GenCommand.Base.options(CommandWithOption)
+    assert %{"my_option" => %{"type" => "string", "required" => true}} = GenCommand.Base.options(CommandWithOption)
   end
 
   test "options default to optional and string-typed" do
-    assert [%{"name" => "default_option", "type" => "string", "required" => false}] = GenCommand.Base.options(CommandWithDefaultOption)
+    assert %{"default_option" => %{"type" => "string", "required" => false}} = GenCommand.Base.options(CommandWithDefaultOption)
   end
 
   test "commands can have multiple options" do
-    assert [
-      %{"name" => "my_option", "type" => "string", "required" => true},
-      %{"name" => "another_option", "type" => "boolean", "required" => false},
-      %{"name" => "foooooo", "type" => "string", "required" => false}
-    ] == GenCommand.Base.options(CommandWithMultipleOptions)
+    assert %{
+      "my_option" => %{"type" => "string", "required" => true},
+      "another_option" => %{"type" => "boolean", "required" => false},
+      "foooooo" => %{"type" => "string", "required" => false}
+    } == GenCommand.Base.options(CommandWithMultipleOptions)
   end
 
   test "commands may require no permissions by default" do

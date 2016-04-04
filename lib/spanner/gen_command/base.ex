@@ -233,15 +233,18 @@ defmodule Spanner.GenCommand.Base do
   ## Example
 
       > CommandWithMultipleOptions.options
-      [
-        %{name: "option_1", type: "string", required: true},
-        %{name: "option_2", type: "boolean", required: false},
-        %{name: "option_3", type: "string", required: false}
-      ]
+      %{
+        "option_1" => %{type: "string", required: true},
+        "option_2" => %{type: "boolean", required: false},
+        "option_3" => %{type: "string", required: false}
+      }
 
   """
   def options(module) do
     attr_values(module, :options)
+    |> Enum.reduce(%{}, fn(%{"name" => name, "type" => type, "required" => required}, acc) ->
+      Map.put(acc, name, %{"type" => type, "required" => required})
+    end)
   end
 
   @doc """

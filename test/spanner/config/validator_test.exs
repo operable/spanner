@@ -2,115 +2,75 @@ defmodule Spanner.Config.Validator.Test do
   use ExUnit.Case, async: true
   alias Spanner.Config
 
-
-  defp get_config(name) do
-    name = name <> ".yaml"
-    path = Path.join("test/assets/configs", name)
-    {:ok, config} = Spanner.Config.Parser.read_from_file(path)
-    config
+  defp validate(config) do
+    Config.validate(config)
   end
 
-  defp validate(name) do
-    Config.validate(get_config(name))
+  defp minimal_config do
+    %{"name" => "foo",
+      "version" => "0.0.1",
+      "commands" => %{
+        "date" => %{
+          "executable" => "/bin/date"
+        }
+      }
+    }
   end
 
-  test "templates should be optional" do
-    assert validate("no_templates") == :ok
+  test "minimal config" do
+    assert validate(minimal_config) == :ok
   end
 
-  Enum.each(["once", "multiple"], fn(execution) ->
-    test "an execution value of `#{execution}` is valid" do
-      config =
-        %{"bundle" => %{
-          "name" => "date",
-          "type" => "foreign"},
-        "commands" => [%{
-          "version" => "0.1.1",
-          "name" => "date",
-          "executable" => "/bin/date",
-          "execution" => unquote(execution),
-          "enforcing" => false}]}
+  test "errors when permissions don't match rules" do
+    rules = ["when command is foo:date must have foo:view"]
+    config = put_in(minimal_config, ["commands", "date", "rules"], rules)
+    response = validate(config)
 
-      response = Config.validate(config)
+    assert response == {:error, [{"The permission 'foo:view' is not in the list of permissions.", "#/commands/date/rules/0"}]}
+  end
 
+  test "errors on bad rule" do
+    rules = ["when command is foo:bar must have permission == foo:baz"]
+    config = put_in(minimal_config, ["commands", "date", "rules"], rules)
+
+    response = validate(config)
+
+    assert response == {:error, [{"(Line: 1, Col: 34) References to permissions must start with a command bundle name or \"site\".", "#/commands/date/rules/0"}]}
+  end
+
+  test "errors on bad command option type" do
+    options = %{"option_1" => %{"type" => "integer", "required" => false}}
+    config = put_in(minimal_config, ["commands", "date", "options"], options)
+    response = validate(config)
+
+    assert response == {:error, [{"Value \"integer\" is not allowed in enum.", "#/commands/date/options/option_1/type"}]}
+  end
+
+  test "errors on bad template format" do
+    templates = %{"foo" => "Some template"}
+    config = put_in(minimal_config, ["templates"], templates)
+    response = validate(config)
+
+    assert response == {:error, [{"Type mismatch. Expected Object but got String.", "#/templates/foo"}]}
+  end
+
+  test "errors on bad template adapter" do
+    templates = %{"foo" => %{"meh" => "{{content}}"}}
+    config = put_in(minimal_config, ["templates"], templates)
+    response = validate(config)
+
+    assert response == {:error, [{"Schema does not allow additional properties.", "#/templates/foo/meh"}]}
+  end
+
+  # env_vars can be strings, booleans and numbers
+  Enum.each(["string", true, 4], fn(type) ->
+    test "env_vars can be a #{type}" do
+      env_var = %{"env1" => unquote(type)}
+      config = put_in(minimal_config, ["commands", "date", "env_vars"], env_var)
+
+      response = validate(config)
       assert response == :ok
     end
   end)
 
-  test "A bad execution type should throw an error" do
-    bad_execution_config =
-      %{"bundle" => %{
-        "name" => "date",
-        "type" => "foreign"},
-      "commands" => [%{
-        "version" => "0.1.1",
-        "name" => "date",
-        "executable" => "/bin/date",
-        "execution" => "multi",
-        "enforcing" => false}]}
-
-    response = Config.validate(bad_execution_config)
-
-    assert response == {:error, [{"Value \"multi\" is not allowed in enum.", "#/commands/0/execution"}]}
-  end
-
-  test "rules should be optional" do
-    assert validate("no_rules") == :ok
-  end
-
-  test "permissions should be optional when there are no rules" do
-    assert validate("no_perms_or_rules") == :ok
-  end
-
-  test "errors when permissions don't match rules" do
-    response = validate("no_permissions")
-
-    assert response == {:error, [{"The permission 'date:view' is not in the list of permissions.", "#/rules/0"}]}
-  end
-
-  test "validates valid foreign command config" do
-    assert validate("valid_foreign_config") == :ok
-  end
-
-  test "errors on bad rule" do
-    response = validate("foreign_bad_rule")
-
-    assert response == {:error, [{"(Line: 1, Col: 34) References to permissions must start with a command bundle name or \"site\".", "#/rules/0"}]}
-  end
-
-  test "errors on bad uninstall attribute" do
-    response = validate("foreign_bad_uninstall")
-
-    assert response == {:error, [{"Type mismatch. Expected String but got Integer.", "#/bundle/uninstall"}]}
-  end
-
-  test "errors on bad install attribute" do
-    response = validate("foreign_bad_install")
-
-    assert response == {:error, [{"Type mismatch. Expected String but got Boolean.", "#/bundle/install"}]}
-  end
-
-  test "errors on bad command option type" do
-    response = validate("foreign_bad_command_option")
-
-    assert response == {:error, [{"Value \"integer\" is not allowed in enum.", "#/commands/0/options/0/type"}]}
-  end
-
-  test "errors on bad template format" do
-    response = validate("foreign_bad_template")
-
-    assert response == {:error, [{"Required property name was not present.", "#/templates/0"},
-                                 {"Required property adapter was not present.", "#/templates/0"},
-                                 {"Required property path was not present.", "#/templates/0"}]}
-  end
-
-  test "errors on bad template adapter" do
-    response = validate("foreign_bad_template_adapter")
-
-    assert response == {:error, [{"Value \"meh\" is not allowed in enum.", "#/templates/0/adapter"}]}
-  end
-
-  test "does not raise with no bundle type (assumes foreign bundle)" do
-    assert validate("valid_foreign_config_without_type") == :ok
-  end
 end

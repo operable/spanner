@@ -13,14 +13,12 @@ defmodule Spanner.Config.SemanticValidator do
   """
   @spec validate(Map.t) :: :ok | {:error, [{String.t, String.t}]}
   def validate(config) do
-    rules       = Map.get(config, "rules", [])
-    bundle      = Map.fetch!(config, "bundle")
+    bundle_name = Map.fetch!(config, "name")
     commands    = Map.fetch!(config, "commands")
     permissions = Map.get(config, "permissions", [])
 
-    errors = rules
-    |> Enum.with_index
-    |> Enum.flat_map(&validate_rule(&1, bundle, commands, permissions))
+    errors = commands
+    |> Enum.flat_map(&validate_command_rules(&1, bundle_name, permissions))
 
     case errors do
       [] ->
@@ -30,17 +28,25 @@ defmodule Spanner.Config.SemanticValidator do
     end
   end
 
-  defp validate_rule({rule, index}, bundle, commands, permissions) do
+  defp validate_command_rules({command_name, %{"rules" => rules}}, bundle_name, permissions) do
+    Enum.with_index(rules)
+    |> Enum.flat_map(&validate_rule(&1, bundle_name, command_name, permissions))
+  end
+  defp validate_command_rules(_, _, _),
+    do: []
+
+
+  defp validate_rule({rule, index}, bundle_name, command_name, permissions) do
     {:ok, %Ast.Rule{}=expr, rule_permissions} = Parser.parse(rule)
     [rule_bundle, rule_command] = String.split(expr.command, ":", parts: 2)
 
-    errors = [validate_bundle(rule_bundle, bundle["name"]),
-              validate_command(rule_command, commands),
+    errors = [validate_bundle(rule_bundle, bundle_name),
+              validate_command(rule_command, command_name),
               validate_permissions(rule_permissions, permissions)]
 
     errors
     |> List.flatten
-    |> Enum.map(&{&1, "#/rules/#{index}"})
+    |> Enum.map(&{&1, "#/commands/#{command_name}/rules/#{index}"})
   end
 
   defp validate_bundle(bundle, bundle),
@@ -48,16 +54,10 @@ defmodule Spanner.Config.SemanticValidator do
   defp validate_bundle(rule_bundle, bundle),
     do: ["The bundle name '#{bundle}' does not match the name in the bundle, '#{rule_bundle}'."]
 
-  defp validate_command(rule_command, commands) do
-    command_names = Enum.map(commands, &Map.fetch!(&1, "name"))
-
-    case rule_command in command_names do
-      true ->
-        []
-      false ->
-        ["The command '#{rule_command}' is not in the list of commands"]
-    end
-  end
+  defp validate_command(command, command),
+    do: []
+  defp validate_command(rule_command, command_name),
+    do: ["The command name '#{command_name}' does not match the name in it's rule, '#{rule_command}'."]
 
   defp validate_permissions(rule_permissions, permissions) do
     missing_permissions = MapSet.difference(MapSet.new(rule_permissions), MapSet.new(permissions)) |> MapSet.to_list
