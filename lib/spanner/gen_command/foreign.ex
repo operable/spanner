@@ -205,11 +205,12 @@ defmodule Spanner.GenCommand.Foreign do
   defp build_calling_env(request, %__MODULE__{bundle: bundle, command: command, bundle_dir: bundle_dir}) do
     %{"COG_BUNDLE" => bundle,
       "COG_COMMAND" => command,
-      "COG_PIPELINE_ID" => get_pipeline_id(request),
-      "COG_CHAT_HANDLE" => request.requestor["handle"]}
+      "COG_PIPELINE_ID" => get_pipeline_id(request)}
     |> Map.merge(build_args_vars(request.args))
     |> Map.merge(build_options_vars(request.options))
     |> Map.merge(filter_injectable_config(request.command_config, bundle_dir))
+    |> Map.merge(build_trigger_vars(request.requestor))
+    |> Map.merge(build_chat_vars(request.requestor))
   end
 
   defp build_args_vars([]) do
@@ -229,6 +230,30 @@ defmodule Spanner.GenCommand.Foreign do
     Enum.reduce(options, acc,
       fn({key, value}, acc) ->
         Map.put(acc, "COG_OPT_#{String.upcase(key)}", "#{value}")
+      end)
+  end
+
+  defp build_trigger_vars(requestor) do
+    Enum.reduce(["trigger_id", "trigger_name", "trigger_user"], %{},
+      fn(key, acc) ->
+        case Map.fetch(requestor, key) do
+          {:ok, value} ->
+            Map.put(acc, "COG_#{String.upcase(key)}", inspect(value))
+          :error ->
+            acc
+        end
+      end)
+  end
+
+  defp build_chat_vars(requestor) do
+    Enum.reduce(["handle"], %{},
+      fn(key, acc) ->
+        case Map.fetch(requestor, key) do
+          {:ok, value} ->
+            Map.put(acc, "COG_CHAT_#{String.upcase(key)}", inspect(value))
+          :error ->
+            acc
+        end
       end)
   end
 
