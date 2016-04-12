@@ -1,96 +1,96 @@
 ---
 "$schema": http://json-schema.org/draft-04/schema#
-title: Bundle Config
-description: A config object for a bundle to be installed
+title: Bundle Config v2
+description: A config schema for bundles
 type: object
 required:
-- bundle
-- commands
+  - name
+  - version
+  - commands
+additionalProperties: false
 properties:
-  bundle:
-    type: object
-    required:
-    - name
-    properties:
-      name:
-        type: string
-        description: The name of the bundle
-      install:
-        type: string
-        description: The path to the script to install the bundle
-      uninstall:
-        type: string
-        description: The path to the script to uninstall the bundle
-  templates:
-    type: array
-    items:
-      "$ref": "#/definitions/template"
+  cog_bundle_version:
+    type: number
+  name:
+    type: string
+  version:
+    type: string
+    pattern: ^\d*\.\d*\.\d*$
   permissions:
     type: array
     items:
       type: string
-  rules:
-    type: array
-    items:
-      type: string
+  docker:
+    type: object
+    required:
+      - image
+      - tag
+    properties:
+      image:
+        type: string
+      tag:
+        type: string
+  templates:
+    type: object
+    additionalProperties:
+      "$ref": "#/definitions/template"
   commands:
-    type: array
-    items:
+    type: object
+    additionalProperties:
       "$ref": "#/definitions/command"
-    minItems: 1
-    uniqueItems: true
+
+############# DEFINITIONS #################
 definitions:
+  template:
+    type: object
+    additionalProperties: false
+    properties:
+      slack:
+        type: string
+      hipchat:
+        type: string
   command:
     type: object
     required:
-    - name
-    - executable
-    - version
-    - enforcing
+      - executable
     properties:
-      name:
-        type: string
-      version:
-        type: string
       executable:
         type: string
-      execution:
-        enum:
-        - multiple
-        - once
-      enforcing:
-        type: boolean
-      env_vars:
-        type: object
       documentation:
         type: string
-      options:
+      rules:
         type: array
         items:
-          type: object
-          properties:
-            type:
-              enum:
-              - string
-              - int
-              - bool
-            required:
-              type: boolean
-            name:
-              type: string
-  template:
+          type: string
+      env_vars:
+        type: object
+        additionalProperties:
+          type:
+            - string
+            - boolean
+            - number
+      options:
+        type: object
+        additionalProperties:
+          "$ref": "#/definitions/command_option"
+  command_option:
     type: object
     required:
-    - name
-    - adapter
-    - path
+      - type
     properties:
-      name:
+      type:
         type: string
-      adapter:
         enum:
-        - slack
-        - hipchat
-      path:
+          - int
+          - float
+          - bool
+          - string
+          - incr
+          - list
+      description:
+        type: string
+      required:
+        type: boolean
+      short_flag:
         type: string
 

@@ -54,57 +54,62 @@ defmodule Spanner.Bundle.Config.Test do
                                            UnboundCommand,
                                            ExecutionOnceCommand,
                                            NeitherCommandNorService], ".")
-    assert %{"bundle" => %{"name" => "testing",
-                           "type" => "elixir"},
-             "commands" => [%{"name" => "command-without-options",
-                              "documentation" => nil,
-                              "enforcing" => true,
-                              "execution" => "multiple",
-                              "options" => [],
-                              "module" => "Spanner.Bundle.Config.Test.CommandWithoutOptions"},
-                            %{"name" => "command-with-options",
-                              "documentation" => nil,
-                              "enforcing" => true,
-                              "execution" => "multiple",
-                              "options" => [%{"name" => "option_1",
-                                              "type" => "bool",
-                                              "required" => true}],
-                              "module" => "Spanner.Bundle.Config.Test.CommandWithOptions"},
-                            %{"name" => "unenforced-command",
-                              "documentation" => nil,
-                              "enforcing" => false,
-                              "execution" => "multiple",
-                              "options" => [],
-                              "module" => "Spanner.Bundle.Config.Test.UnenforcedCommand"},
-                            %{"name" => "unbound-command",
-                              "documentation" => nil,
-                              "enforcing" => false,
-                              "execution" => "multiple",
-                              "options" => [],
-                              "module" => "Spanner.Bundle.Config.Test.UnboundCommand"},
-                            %{"name" => "execution-once-command",
-                              "documentation" => nil,
-                              "enforcing" => false,
-                              "execution" => "once",
-                              "options" => [],
-                              "module" => "Spanner.Bundle.Config.Test.ExecutionOnceCommand"}],
-             "permissions" => ["testing:bar", "testing:baz", "testing:foo"],
-             "rules" => [
-               "when command is testing:command-with-options must have testing:bar",
-               "when command is testing:command-with-options with arg[0] == 'baz' must have testing:baz",
-               "when command is testing:command-without-options must have testing:foo"
-             ],
-             "templates" => []} == config
+    assert %{"name" => "testing",
+             "type" => "elixir",
+             "version" => "0.0.1",
+             "commands" => %{
+               "command-without-options" => %{
+                 "documentation" => nil,
+                 "enforcing" => true,
+                 "execution" => "multiple",
+                 "module" => "Spanner.Bundle.Config.Test.CommandWithoutOptions",
+                 "rules" => [
+                   "when command is testing:command-without-options must have testing:foo"
+                 ]},
+               "command-with-options" => %{
+                 "documentation" => nil,
+                 "enforcing" => true,
+                 "execution" => "multiple",
+                 "module" => "Spanner.Bundle.Config.Test.CommandWithOptions",
+                 "options" => %{
+                   "option_1" => %{
+                     "type" => "bool",
+                     "required" => true
+                   }
+                 },
+                 "rules" => [
+                   "when command is testing:command-with-options must have testing:bar",
+                   "when command is testing:command-with-options with arg[0] == 'baz' must have testing:baz"
+                 ]},
+               "unenforced-command" => %{
+                 "documentation" => nil,
+                 "enforcing" => false,
+                 "execution" => "multiple",
+                 "module" => "Spanner.Bundle.Config.Test.UnenforcedCommand"},
+               "unbound-command" => %{
+                 "documentation" => nil,
+                 "enforcing" => false,
+                 "execution" => "multiple",
+                 "module" => "Spanner.Bundle.Config.Test.UnboundCommand"},
+               "execution-once-command" => %{
+                 "documentation" => nil,
+                 "enforcing" => false,
+                 "execution" => "once",
+                 "module" => "Spanner.Bundle.Config.Test.ExecutionOnceCommand"}
+             },
+             "permissions" => ["testing:bar", "testing:baz", "testing:foo"]} = config
   end
 
   # TODO: Should this be allowed?
   test "creates a config when there are no commands, services, permissions, or rules" do
     config = Config.gen_config("testing", [NeitherCommandNorService], ".")
-    assert %{"bundle" => %{"name" => "testing", "type" => "elixir"},
-             "commands" => [],
+
+    assert %{"name" => "testing",
+             "type" => "elixir",
+             "version" => "0.0.1",
+             "commands" => %{},
              "permissions" => [],
-             "rules" => [],
-             "templates" => []} == config
+             "templates" => %{}} == config
   end
 
   @config %{"commands" => [%{"module" => "Elixir.AWS.Commands.Describe"},
@@ -120,13 +125,9 @@ defmodule Spanner.Bundle.Config.Test do
   test "includes templates in the config" do
     config = Config.gen_config("testing", [], "test/support/test-bundle")
 
-    assert %{"templates" => [%{"adapter" => "hipchat",
-                               "name" => "help",
-                               "path" => "test/support/test-bundle/templates/hipchat/help.mustache",
-                              },
-                             %{"adapter" => "slack",
-                               "name" => "help",
-                               "path" => "test/support/test-bundle/templates/slack/help.mustache",
-                               }]} = config
+    assert %{"templates" => %{"help" => %{
+                                "hipchat" => "{{#command}}\n  Documentation for <pre>{{command}}</pre>\n  {{{documentation}}}\n{{/command}}\n",
+                                "slack" => "{{#command}}\n  Documentation for `{{command}}`\n  {{{documentation}}}\n{{/command}}\n"
+                              }}} = config
   end
 end

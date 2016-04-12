@@ -2,6 +2,8 @@ defmodule Spanner.Config.SyntaxValidator do
 
   alias Piper.Permissions.Parser
 
+  @schema File.read!(Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema.yaml"]))
+
   @moduledoc """
   Validates bundle config syntax leveraging JsonSchema.
   """
@@ -20,7 +22,7 @@ defmodule Spanner.Config.SyntaxValidator do
     with {:ok, schema} <- load_schema("bundle_config_schema"),
          {:ok, resolved_schema} <- resolve_schema(schema),
          :ok <- ExJsonSchema.Validator.validate(resolved_schema, config),
-         :ok <- validate_rule_parsing(config["rules"]) do
+         :ok <- validate_rule_parsing(config["commands"]) do
            :ok
     end
   end
@@ -40,34 +42,30 @@ defmodule Spanner.Config.SyntaxValidator do
     end
   end
 
-  defp validate_rule_parsing(nil),
-    do: :ok
-  defp validate_rule_parsing(rules) do
+  defp validate_rule_parsing(commands) when is_map(commands) do
+    Enum.flat_map(commands, &validate_rule_parsing/1)
+    |> prepare_return
+  end
+  defp validate_rule_parsing({command, %{"rules" => rules}}) do
     Enum.with_index(rules)
     |> Enum.reduce([], fn({rule, index}, acc) ->
       case Parser.parse(rule) do
         {:ok, _, _} ->
           acc
         {:error, err} ->
-          [{err, "#/rules/#{index}"}  | acc]
+          [{err, "#/commands/#{command}/rules/#{index}"}  | acc]
       end
     end)
-    |> prepare_return
   end
+  defp validate_rule_parsing(_),
+    do: []
 
   defp prepare_return([]),
     do: :ok
   defp prepare_return(errors),
     do: {:error, errors}
 
-  defp load_schema(name) do
-    # Returns absolute path to spanner/priv
-    priv_dir = :code.priv_dir(:spanner)
-
-    # path will be a string like
-    # /Users/kevsmith/work/cog/_build/dev/lib/spanner/priv/schemas/<name>.yaml
-    path = Path.join([priv_dir, "schemas", name <> ".yaml"])
-
-    Spanner.Config.Parser.read_from_file(path)
+  defp load_schema(_name) do
+    Spanner.Config.Parser.read_from_string(@schema)
   end
 end

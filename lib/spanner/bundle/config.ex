@@ -99,15 +99,16 @@ defmodule Spanner.Bundle.Config do
     Enum.reduce([gen_bundle(name),
                  gen_commands(modules),
                  gen_permissions(name, modules),
-                 gen_rules(modules),
                  gen_templates(work_dir)],
                 &Map.merge/2)
   end
 
   # Generate top-level bundle configuration
   defp gen_bundle(name) do
-    %{"bundle" => %{"name" => name,
-                    "type" => "elixir"}}
+    # TODO: Don't hardcode the version
+    %{"name" => name,
+      "type" => "elixir",
+      "version" => "0.0.1"}
   end
 
   # Generate the union of all permissions required by commands in the
@@ -127,30 +128,19 @@ defmodule Spanner.Bundle.Config do
   defp namespace_permission(bundle_name, permission_name),
     do: "#{bundle_name}:#{permission_name}"
 
-  # Extract rules from all commands in the bundle
-  defp gen_rules(modules) do
-    rules = modules
-    |> only_commands
-    |> Enum.flat_map(&(GenCommand.Base.rules(&1)))
-    |> Enum.sort
-
-    %{"rules" => rules}
-  end
-
   defp gen_templates(work_dir) do
     paths = Path.wildcard("#{work_dir}/templates/*/*.mustache")
 
-    templates = for path <- paths do
+    templates = Enum.reduce(paths, %{}, fn(path, acc) ->
       relative_path = Path.relative_to(path, work_dir)
-      ["templates", adapter, file] = Path.split(relative_path)
+      ["templates", provider, file] = Path.split(relative_path)
       name = Path.basename(file, ".mustache")
-      source = File.read!(path)
+      contents = File.read!(path)
 
-      %{"adapter" => adapter,
-        "name" => name,
-        "path" => path,
-        "source" => source}
-    end
+      Map.update(acc, name, %{provider => contents}, fn(val) ->
+        Map.merge(val, %{provider => contents})
+      end)
+    end)
 
     %{"templates" => templates}
   end
@@ -158,31 +148,33 @@ defmodule Spanner.Bundle.Config do
   # Extract all commands from `modules` and generate configuration
   # maps for them
   defp gen_commands(modules) do
-    %{"commands" => Enum.map(only_commands(modules), &command_map/1)}
+    %{"commands" => Enum.reduce(only_commands(modules), %{}, &command_map/2)}
   end
 
   defp only_commands(modules),
     do: Enum.filter(modules, &GenCommand.Base.used_base?/1)
 
-  defp command_map(module) do
-    %{"name" => GenCommand.Base.command_name(module),
-      "enforcing" => GenCommand.Base.enforcing?(module),
-      "execution" => GenCommand.Base.execution(module),
-      "options" => GenCommand.Base.options(module),
-      "documentation" => case Code.get_docs(module, :moduledoc) do
-                           {_line, doc} ->
-                             # If a module doesn't have a module doc,
-                             # then it'll return a tuple of `{1, nil}`,
-                             # so that works out fine here.
-                             doc
-                           nil ->
-                             # TODO: Transition away from @moduledoc
-                             # to our own thing; modules defined in
-                             # test scripts apparently can access
-                             # @moduledocs
-                             nil
-                         end,
-      "module" => inspect(module)}
+  defp command_map(module, acc) do
+    command =
+      %{"options" => GenCommand.Base.options(module),
+        "enforcing" => GenCommand.Base.enforcing?(module),
+        "execution" => GenCommand.Base.execution(module),
+        "rules" => GenCommand.Base.rules(module) |> Enum.sort,
+        "documentation" => case Code.get_docs(module, :moduledoc) do
+                             {_line, doc} ->
+                               # If a module doesn't have a module doc,
+                               # then it'll return a tuple of `{1, nil}`,
+                               # so that works out fine here.
+                               doc
+                             nil ->
+                               # TODO: Transition away from @moduledoc
+                               # to our own thing; modules defined in
+                               # test scripts apparently can access
+                               # @moduledocs
+                               nil
+                           end,
+        "module" => inspect(module)}
+    Map.put(acc, GenCommand.Base.command_name(module), command)
   end
 
 end
