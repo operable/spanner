@@ -17,8 +17,66 @@ defmodule Spanner.Config.Validator.Test do
     }
   end
 
+  defp enforcing_config do
+    %{"name" => "foo",
+      "version" => "0.0.1",
+      "commands" => %{
+        "bar" => %{
+          "executable" => "/bin/bar",
+          "enforcing" => true}}}
+  end
+
+  defp bad_enforcing_config do
+    %{"name" => "foo",
+      "version" => "0.0.1",
+      "commands" => %{
+        "bar" => %{
+          "executable" => "/bin/bar",
+          "enforcing" => "true"}}}
+  end
+
+  defp execution_config do
+    %{"name" => "foo",
+      "version" => "0.0.1",
+      "commands" => %{
+        "bar" => %{"executable" => "/bin/bar",
+                   "enforcing" => false,
+                   "execution" => "once"},
+        "baz" => %{"executable" => "/bin/baz",
+                   "execution" => "multiple"}}}
+  end
+
+  defp bad_execution_config do
+    %{"name" => "foo",
+      "version" => "0.0.1",
+      "commands" => %{
+        "bar" => %{"executable" => "/bin/bar",
+                   "execution" => "once"},
+        "baz" => %{"executable" => "/bin/baz",
+                   "execution" => "multi"}}}
+  end
+
+
   test "minimal config" do
     assert validate(minimal_config) == :ok
+  end
+
+  test "enforcing config" do
+    assert validate(enforcing_config) == :ok
+  end
+
+  test "bad enforcing config" do
+    assert validate(bad_enforcing_config) == {:error,
+                                              [{"Type mismatch. Expected Boolean but got String.",
+                                                "#/commands/bar/enforcing"}]}
+  end
+
+  test "execution_config" do
+    assert validate(execution_config) == :ok
+  end
+
+  test "bad_execution_config" do
+    assert validate(bad_execution_config) == {:error, [{"Value \"multi\" is not allowed in enum.", "#/commands/baz/execution"}]}
   end
 
   test "errors when permissions don't match rules" do
