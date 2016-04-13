@@ -42,9 +42,17 @@ defmodule Spanner.Config do
 
   @doc "Validate bundle configs"
   def validate(config) do
-    with :ok <- Spanner.Config.SyntaxValidator.validate(config),
-         :ok <- Spanner.Config.SemanticValidator.validate(fixup_rules(config)) do
-      :ok
+    case Spanner.Config.SyntaxValidator.validate(config) do
+      :ok ->
+        config = fixup_rules(config)
+        case Spanner.Config.SemanticValidator.validate(config) do
+          :ok ->
+            {:ok, config}
+          error ->
+            error
+        end
+      error ->
+        error
     end
   end
 

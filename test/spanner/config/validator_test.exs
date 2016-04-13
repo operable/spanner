@@ -3,7 +3,12 @@ defmodule Spanner.Config.Validator.Test do
   alias Spanner.Config
 
   defp validate(config) do
-    Config.validate(config)
+    case Config.validate(config) do
+      {:ok, _} ->
+        :ok
+      error ->
+        error
+    end
   end
 
   defp minimal_config do
@@ -61,6 +66,20 @@ defmodule Spanner.Config.Validator.Test do
                    "execution" => "multi"}}}
   end
 
+  defp incomplete_rules_config do
+    %{"cog_bundle_version" => 2,
+      "name" => "foo",
+      "version" => "0.1",
+      "permissions" => ["foo:view"],
+      "commands" => %{
+        "bar" => %{"executable" => "/bin/bar",
+                   "execution" => "once",
+                   "rules" => ["must have foo:view"]},
+        "baz" => %{"executable" => "/bin/baz",
+                   "execution" => "multiple"}}}
+  end
+
+
 
   test "minimal config" do
     assert validate(minimal_config) == :ok
@@ -100,6 +119,16 @@ defmodule Spanner.Config.Validator.Test do
 
   test "bad_execution_config" do
     assert validate(bad_execution_config) == {:error, [{"Value \"multi\" is not allowed in enum.", "#/commands/baz/execution"}]}
+  end
+
+  test "incomplete rules" do
+    assert validate(incomplete_rules_config) == :ok
+  end
+
+  test "rules are fixed up" do
+    {:ok, config} = Spanner.Config.validate(incomplete_rules_config)
+    [rule] = get_in(config, ["commands", "bar", "rules"])
+    assert String.starts_with?(rule, "when command is foo:bar")
   end
 
   test "errors when permissions don't match rules" do
