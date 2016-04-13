@@ -2,7 +2,11 @@ defmodule Spanner.Config.SyntaxValidator do
 
   alias Piper.Permissions.Parser
 
-  @schema File.read!(Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema.yaml"]))
+  @schema_file Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema.yaml"])
+
+  @external_resource @schema_file
+
+  @schema File.read!(@schema_file)
 
   @moduledoc """
   Validates bundle config syntax leveraging JsonSchema.
