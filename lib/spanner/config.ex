@@ -42,8 +42,8 @@ defmodule Spanner.Config do
 
   @doc "Validate bundle configs"
   def validate(config) do
-    with fixed_config = fixup_rules(config),
-         :ok <- Spanner.Config.SyntaxValidator.validate(fixed_config),
+    with :ok <- Spanner.Config.SyntaxValidator.validate(config),
+         fixed_config <- fixup_rules(config),
          :ok <- Spanner.Config.SemanticValidator.validate(fixed_config) do
       :ok
     end
@@ -68,10 +68,5 @@ defmodule Spanner.Config do
       config
     end
   end
-  # We need a name and command to fix rules. If we don't have a name then there
-  # are more severe issues with the config. We can just pass the config through
-  # and let the validator inform the user what they did wrong.
-  defp update_rules(_, config),
-    do: config
 
 end

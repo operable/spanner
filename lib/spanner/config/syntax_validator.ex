@@ -26,9 +26,7 @@ defmodule Spanner.Config.SyntaxValidator do
     with {:ok, schema} <- load_schema("bundle_config_schema"),
          {:ok, resolved_schema} <- resolve_schema(schema),
          :ok <- ExJsonSchema.Validator.validate(resolved_schema, config),
-         :ok <- validate_rule_parsing(config["commands"]) do
-           :ok
-    end
+       do: :ok
   end
 
   # Resolves our internal config schema. If the schema fails to resolve we
@@ -45,29 +43,6 @@ defmodule Spanner.Config.SyntaxValidator do
         {:error, "Invalid config schema: #{inspect err}"}
     end
   end
-
-  defp validate_rule_parsing(commands) when is_map(commands) do
-    Enum.flat_map(commands, &validate_rule_parsing/1)
-    |> prepare_return
-  end
-  defp validate_rule_parsing({command, %{"rules" => rules}}) do
-    Enum.with_index(rules)
-    |> Enum.reduce([], fn({rule, index}, acc) ->
-      case Parser.parse(rule) do
-        {:ok, _, _} ->
-          acc
-        {:error, err} ->
-          [{err, "#/commands/#{command}/rules/#{index}"}  | acc]
-      end
-    end)
-  end
-  defp validate_rule_parsing(_),
-    do: []
-
-  defp prepare_return([]),
-    do: :ok
-  defp prepare_return(errors),
-    do: {:error, errors}
 
   defp load_schema(_name) do
     Spanner.Config.Parser.read_from_string(@schema)
