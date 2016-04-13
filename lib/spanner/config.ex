@@ -68,5 +68,10 @@ defmodule Spanner.Config do
       config
     end
   end
+  # We need a name and command to fix rules. If we don't have a name then there
+  # are more severe issues with the config. We can just pass the config through
+  # and let the validator inform the user what they did wrong.
+  defp update_rules(_, config),
+    do: config
 
 end
