@@ -41,7 +41,7 @@ defmodule Spanner.Config.Validator.Test do
   defp execution_config do
     %{"cog_bundle_version" => 2,
       "name" => "foo",
-      "version" => "0.0.1",
+      "version" => "0.1",
       "commands" => %{
         "bar" => %{"executable" => "/bin/bar",
                    "enforcing" => false,
@@ -53,7 +53,7 @@ defmodule Spanner.Config.Validator.Test do
   defp bad_execution_config do
     %{"cog_bundle_version" => 2,
       "name" => "foo",
-      "version" => "0.0.1",
+      "version" => "0.1",
       "commands" => %{
         "bar" => %{"executable" => "/bin/bar",
                    "execution" => "once"},
@@ -64,6 +64,13 @@ defmodule Spanner.Config.Validator.Test do
 
   test "minimal config" do
     assert validate(minimal_config) == :ok
+  end
+
+  test "bad bundle versions" do
+    updated = put_in(minimal_config, ["version"], "1")
+    assert validate(updated) == {:error, [{"String \"1\" does not match pattern \"^\\\\d+\\\\.\\\\d+($|\\\\.\\\\d+$)\".", "#/version"}]}
+    updated = put_in(minimal_config, ["version"], "0.0.1-beta")
+    assert validate(updated) == {:error, [{"String \"0.0.1-beta\" does not match pattern \"^\\\\d+\\\\.\\\\d+($|\\\\.\\\\d+$)\".", "#/version"}]}
   end
 
   test "wrong cog_bundle_version" do
