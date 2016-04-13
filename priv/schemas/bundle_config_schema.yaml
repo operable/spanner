@@ -4,6 +4,7 @@ title: Bundle Config v2
 description: A config schema for bundles
 type: object
 required:
+  - cog_bundle_version
   - name
   - version
   - commands
@@ -11,6 +12,8 @@ additionalProperties: false
 properties:
   cog_bundle_version:
     type: number
+    enum:
+      - 2
   name:
     type: string
   version:
