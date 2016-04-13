@@ -37,16 +37,20 @@ defmodule Spanner.Config.SemanticValidator do
 
 
   defp validate_rule({rule, index}, bundle_name, command_name, permissions) do
-    {:ok, %Ast.Rule{}=expr, rule_permissions} = Parser.parse(rule)
-    [rule_bundle, rule_command] = String.split(expr.command, ":", parts: 2)
+    case Parser.parse(rule) do
+      {:ok, %Ast.Rule{}=expr, rule_permissions} ->
+        [rule_bundle, rule_command] = String.split(expr.command, ":", parts: 2)
 
-    errors = [validate_bundle(rule_bundle, bundle_name),
-              validate_command(rule_command, command_name),
-              validate_permissions(rule_permissions, permissions)]
+        errors = [validate_bundle(rule_bundle, bundle_name),
+                  validate_command(rule_command, command_name),
+                  validate_permissions(rule_permissions, permissions)]
 
-    errors
-    |> List.flatten
-    |> Enum.map(&{&1, "#/commands/#{command_name}/rules/#{index}"})
+        errors
+        |> List.flatten
+        |> Enum.map(&{&1, "#/commands/#{command_name}/rules/#{index}"})
+      {:error, msg} ->
+        [{msg, "#/commands/#{command_name}/rules/#{index}"}]
+    end
   end
 
   defp validate_bundle(bundle, bundle),
