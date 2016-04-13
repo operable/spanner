@@ -1,7 +1,5 @@
 defmodule Spanner.Config.SyntaxValidator do
 
-  alias Piper.Permissions.Parser
-
   @schema_file Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema.yaml"])
 
   @external_resource @schema_file
