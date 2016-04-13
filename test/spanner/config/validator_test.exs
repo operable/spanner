@@ -7,7 +7,8 @@ defmodule Spanner.Config.Validator.Test do
   end
 
   defp minimal_config do
-    %{"name" => "foo",
+    %{"cog_bundle_version" => 2,
+      "name" => "foo",
       "version" => "0.0.1",
       "commands" => %{
         "date" => %{
@@ -18,7 +19,8 @@ defmodule Spanner.Config.Validator.Test do
   end
 
   defp enforcing_config do
-    %{"name" => "foo",
+    %{"cog_bundle_version" => 2,
+      "name" => "foo",
       "version" => "0.0.1",
       "commands" => %{
         "bar" => %{
@@ -27,7 +29,8 @@ defmodule Spanner.Config.Validator.Test do
   end
 
   defp bad_enforcing_config do
-    %{"name" => "foo",
+    %{"cog_bundle_version" => 2,
+      "name" => "foo",
       "version" => "0.0.1",
       "commands" => %{
         "bar" => %{
@@ -36,7 +39,8 @@ defmodule Spanner.Config.Validator.Test do
   end
 
   defp execution_config do
-    %{"name" => "foo",
+    %{"cog_bundle_version" => 2,
+      "name" => "foo",
       "version" => "0.0.1",
       "commands" => %{
         "bar" => %{"executable" => "/bin/bar",
@@ -47,7 +51,8 @@ defmodule Spanner.Config.Validator.Test do
   end
 
   defp bad_execution_config do
-    %{"name" => "foo",
+    %{"cog_bundle_version" => 2,
+      "name" => "foo",
       "version" => "0.0.1",
       "commands" => %{
         "bar" => %{"executable" => "/bin/bar",
@@ -59,6 +64,17 @@ defmodule Spanner.Config.Validator.Test do
 
   test "minimal config" do
     assert validate(minimal_config) == :ok
+  end
+
+  test "wrong cog_bundle_version" do
+    result = update_in(minimal_config, ["cog_bundle_version"], fn(_) -> 1 end)
+    |> validate
+    assert result == {:error, [{"Value 1 is not allowed in enum.", "#/cog_bundle_version"}]}
+  end
+
+  test "missing cog_bundle_version" do
+    result = Map.delete(minimal_config, "cog_bundle_version") |> validate
+    assert result == {:error, [{"Required property cog_bundle_version was not present.", "#"}]}
   end
 
   test "enforcing config" do
