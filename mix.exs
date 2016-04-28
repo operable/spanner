@@ -12,19 +12,16 @@ defmodule Spanner.Mixfile do
 
   def application do
     [applications: [:logger,
-                    :yaml_elixir,
-                    :porcelain]]
+                    :yaml_elixir]]
   end
 
   defp deps do
     [{:piper, github: "operable/piper"},
-     {:carrier, github: "operable/carrier"},
 
      # For yaml parsing. yaml_elixir is a wrapper around yamerl which is a native erlang lib.
      {:yaml_elixir, "~> 1.0.0"},
      {:yamerl, github: "yakaz/yamerl"},
 
-     {:ex_json_schema, "~> 0.3.1"},
-     {:porcelain, "~> 2.0.1"}]
+     {:ex_json_schema, "~> 0.3.1"}]
   end
 end
