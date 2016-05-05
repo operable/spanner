@@ -145,7 +145,7 @@ defmodule Spanner.Config.Validator.Test do
 
     response = validate(config)
 
-    assert response == {:error, [{"(Line: 1, Col: 34) References to permissions must start with a command bundle name or \"site\".", "#/commands/date/rules/0"}]}
+    assert response == {:error, [{"(Line: 1, Col: 34) References to permissions must be the literal \"allow\" or start with a command bundle name or \"site\".", "#/commands/date/rules/0"}]}
   end
 
   test "errors on bad command option type" do
