@@ -56,17 +56,12 @@ definitions:
     type: object
     required:
       - executable
+      - rules
     properties:
       executable:
         type: string
       documentation:
         type: string
-      execution:
-        enum:
-          - once
-          - multiple
-      enforcing:
-        type: boolean
       rules:
         type: array
         items:
