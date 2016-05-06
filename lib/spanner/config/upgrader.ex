@@ -32,8 +32,25 @@ defmodule Spanner.Config.Upgrader do
         {:error, errors, [deprecation_msg]}
     end
   end
+  # If we get an un-upgradable version, let the user know.
+  def upgrade(%{"cog_bundle_version" => version}) do
+    {:error,
+     [{"""
+       cog_bundle_version #{version} is not supported. \
+       Please update your bundle config to version #{@current_version}.\
+       """,
+       "#/cog_bundle_version"}],
+     []}
+  end
+  # If we don't get a version, let the user know.
   def upgrade(_) do
-    {:error, {[], [{"Cog bundle version not supported", "#/cog_bundle_version"}]}}
+    {:error,
+     [{"""
+       cog_bundle_version not specified. You must specify a valid bundle \
+       version. The current version is #{@current_version}.\
+       """,
+       "#/cog_bundle_version"}],
+     []}
   end
 
   defp do_upgrade(config) do
