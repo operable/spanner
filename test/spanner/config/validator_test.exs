@@ -26,6 +26,19 @@ defmodule Spanner.Config.Validator.Test do
     }
   end
 
+  defp old_config do
+    %{"cog_bundle_version" => 2,
+      "name" => "foo",
+      "version" => "0.0.1",
+      "commands" => %{
+        "date" => %{
+          "executable" => "/bin/date",
+          "enforcing" => false
+        }
+      }
+    }
+  end
+
   defp incomplete_rules_config do
     %{"cog_bundle_version" => 3,
       "name" => "foo",
@@ -117,6 +130,22 @@ defmodule Spanner.Config.Validator.Test do
     response = validate(config)
 
     assert response == {:error, [{"Schema does not allow additional properties.", "#/templates/foo/meh"}], []}
+  end
+
+  test "upgrading bundle versions" do
+    response = validate(old_config)
+    {:warning, config, warnings} = response
+
+    assert %{"cog_bundle_version" => 3,
+             "name" => "foo",
+             "version" => "0.0.1",
+             "commands" => %{
+               "date" => %{
+                 "executable" => "/bin/date",
+                 "rules" => ["when command is foo:date allow"]}},
+             } = config
+    assert [{"Bundle config version 2 has been deprecated. Please update to version 3.", "#/cog_bundle_version"},
+            {"Non-enforcing commands have been deprecated. Please update your bundle config", "#/commands/date/enforcing"}] = warnings
   end
 
   # env_vars can be strings, booleans and numbers

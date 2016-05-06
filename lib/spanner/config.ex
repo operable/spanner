@@ -70,7 +70,7 @@ defmodule Spanner.Config do
         case validate(upgraded_config) do
           {:ok, validated_config} ->
             {:warning, validated_config, warnings}
-          {:error, errors} ->
+          {:error, errors, _} ->
             {:error, errors, warnings}
         end
       {:error, errors, warnings} ->
