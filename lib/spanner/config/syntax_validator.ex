@@ -1,27 +1,27 @@
 defmodule Spanner.Config.SyntaxValidator do
 
-  @schema_file Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema.yaml"])
+  @schema_file_v2 Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema_v2.yaml"])
+  @schema_file_v3 Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema_v3.yaml"])
 
-  @external_resource @schema_file
+  @external_resource @schema_file_v2
+  @external_resource @schema_file_v3
 
-  @schema File.read!(@schema_file)
+  @schema_v2 File.read!(@schema_file_v2)
+  @schema_v3 File.read!(@schema_file_v3)
 
   @moduledoc """
   Validates bundle config syntax leveraging JsonSchema.
   """
 
   @doc """
-  Accepts a config map and validates syntax. Validate does three major checks.
-  An error can be returned during any one of these. First it does some basic
-  validation on the config using JsonSchema. Last we validate that all rules
-  at least parse.
+  Accepts a config map and validates syntax.
   """
-  @spec validate(Map.t) :: :ok | {:ok, [{String.t, String.t}]}
-  def validate(config) do
+  @spec validate(Map.t, integer()) :: :ok | {:error, [{String.t, String.t}]}
+  def validate(config, version \\ 3) do
     # Note: We could validate command calling convention with ExJsonEchema
     # but the error that it returned was less than informative so instead
     # we just do it manually. It may be worth revisiting in the future.
-    with {:ok, schema} <- load_schema("bundle_config_schema"),
+    with {:ok, schema} <- load_schema(version),
          {:ok, resolved_schema} <- resolve_schema(schema),
          :ok <- ExJsonSchema.Validator.validate(resolved_schema, config),
        do: :ok
@@ -42,7 +42,8 @@ defmodule Spanner.Config.SyntaxValidator do
     end
   end
 
-  defp load_schema(_name) do
-    Spanner.Config.Parser.read_from_string(@schema)
-  end
+  defp load_schema(2),
+    do: Spanner.Config.Parser.read_from_string(@schema_v2)
+  defp load_schema(_),
+    do: Spanner.Config.Parser.read_from_string(@schema_v3)
 end

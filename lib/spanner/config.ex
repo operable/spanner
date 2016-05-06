@@ -1,4 +1,8 @@
 defmodule Spanner.Config do
+  alias Spanner.Config.SyntaxValidator
+  alias Spanner.Config.SemanticValidator
+  alias Spanner.Config.Upgrader
+
   @config_extensions [".yaml", ".yml", ".json"]
   @config_file "config"
 
@@ -40,19 +44,37 @@ defmodule Spanner.Config do
   def fixup_rules(config),
     do: config
 
-  @doc "Validate bundle configs"
-  def validate(config) do
-    case Spanner.Config.SyntaxValidator.validate(config) do
+  @doc """
+  Validates bundle configs. Returns {:ok, config} | {:error, errors, warnings} |
+  {:warning, config, warnings}
+  """
+  @spec validate(Map.t) ::
+    {:ok, Map.t} | {:error, List.t, List.t} | {:warning, Map.t, List.t}
+  def validate(%{"cog_bundle_version" => 3}=config) do
+    case SyntaxValidator.validate(config) do
       :ok ->
         config = fixup_rules(config)
-        case Spanner.Config.SemanticValidator.validate(config) do
+        case SemanticValidator.validate(config) do
           :ok ->
             {:ok, config}
-          error ->
-            error
+          {:error, errors} ->
+            {:error, errors, []}
         end
-      error ->
-        error
+      {:error, errors} ->
+        {:error, errors, []}
+    end
+  end
+  def validate(config) do
+    case Upgrader.upgrade(config) do
+      {:ok, upgraded_config, warnings} ->
+        case validate(upgraded_config) do
+          {:ok, validated_config} ->
+            {:warning, validated_config, warnings}
+          {:error, errors} ->
+            {:error, errors, warnings}
+        end
+      {:error, errors, warnings} ->
+        {:error, errors, warnings}
     end
   end
 

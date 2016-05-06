@@ -1,0 +1,101 @@
+---
+"$schema": http://json-schema.org/draft-04/schema#
+title: Bundle Config v3
+description: A config schema for bundles
+type: object
+required:
+  - cog_bundle_version
+  - name
+  - version
+  - commands
+additionalProperties: false
+properties:
+  cog_bundle_version:
+    type: number
+    enum:
+      - 2
+      - 3
+  name:
+    type: string
+  version:
+    type: string
+    pattern: ^\d+\.\d+($|\.\d+$)
+  permissions:
+    type: array
+    items:
+      type: string
+  docker:
+    type: object
+    required:
+      - image
+      - tag
+    properties:
+      image:
+        type: string
+      tag:
+        type: string
+  templates:
+    type: object
+    additionalProperties:
+      "$ref": "#/definitions/template"
+  commands:
+    type: object
+    additionalProperties:
+      "$ref": "#/definitions/command"
+
+############# DEFINITIONS #################
+definitions:
+  template:
+    type: object
+    additionalProperties: false
+    properties:
+      slack:
+        type: string
+      hipchat:
+        type: string
+  command:
+    type: object
+    required:
+      - executable
+      - rules
+    properties:
+      executable:
+        type: string
+      documentation:
+        type: string
+      rules:
+        type: array
+        items:
+          type: string
+      env_vars:
+        type: object
+        additionalProperties:
+          type:
+            - string
+            - boolean
+            - number
+      options:
+        type: object
+        additionalProperties:
+          "$ref": "#/definitions/command_option"
+  command_option:
+    type: object
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        enum:
+          - int
+          - float
+          - bool
+          - string
+          - incr
+          - list
+      description:
+        type: string
+      required:
+        type: boolean
+      short_flag:
+        type: string
+
