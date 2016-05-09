@@ -72,10 +72,15 @@ defmodule Spanner.Config do
   # Gets triggered when we have an old bundle config to validate
   # Upgrader will return an error if the bundle is not upgradable
   def validate(config) do
+    # Upgrader will return an upgraded config and a list of warnings
+    # or an error
     case Upgrader.upgrade(config) do
       {:ok, upgraded_config, warnings} ->
+        # We still need to validate the upgraded config
         case validate(upgraded_config) do
           {:ok, validated_config} ->
+            # If everything goes well, we return the validated config
+            # and a list of warnings.
             {:warning, validated_config, warnings}
           {:error, errors, _} ->
             {:error, errors, warnings}
