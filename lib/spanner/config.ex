@@ -1,6 +1,16 @@
 defmodule Spanner.Config do
+  alias Spanner.Config.SyntaxValidator
+  alias Spanner.Config.SemanticValidator
+  alias Spanner.Config.Upgrader
+
+  @current_config_version 3
+  @old_config_version @current_config_version - 1
   @config_extensions [".yaml", ".yml", ".json"]
   @config_file "config"
+
+  @doc "Returns the current supported config version"
+  def current_config_version,
+    do: @current_config_version
 
   @doc "Returns a list of valid config extensions"
   def config_extensions,
@@ -40,20 +50,61 @@ defmodule Spanner.Config do
   def fixup_rules(config),
     do: config
 
-  @doc "Validate bundle configs"
-  def validate(config) do
-    case Spanner.Config.SyntaxValidator.validate(config) do
+  @doc """
+  Validates bundle configs. Returns {:ok, config} | {:error, errors, warnings} |
+  {:warning, config, warnings}
+  """
+  @spec validate(Map.t) ::
+    {:ok, Map.t} | {:error, List.t, List.t} | {:warning, Map.t, List.t}
+  def validate(%{"cog_bundle_version" => @current_config_version}=config) do
+    case SyntaxValidator.validate(config) do
       :ok ->
         config = fixup_rules(config)
-        case Spanner.Config.SemanticValidator.validate(config) do
+        case SemanticValidator.validate(config) do
           :ok ->
             {:ok, config}
-          error ->
-            error
+          {:error, errors} ->
+            {:error, errors, []}
         end
-      error ->
-        error
+      {:error, errors} ->
+        {:error, errors, []}
     end
+  end
+  def validate(%{"cog_bundle_version" => @old_config_version}=config) do
+    # Upgrader will return an upgraded config and a list of warnings
+    # or an error
+    case Upgrader.upgrade(config) do
+      {:ok, upgraded_config, warnings} ->
+        # We still need to validate the upgraded config
+        case validate(upgraded_config) do
+          {:ok, validated_config} ->
+            # If everything goes well, we return the validated config
+            # and a list of warnings.
+            {:warning, validated_config, warnings}
+          {:error, errors, _} ->
+            {:error, errors, warnings}
+        end
+      {:error, errors, warnings} ->
+        {:error, errors, warnings}
+    end
+  end
+  def validate(%{"cog_bundle_version" => version}) do
+    {:error,
+     [{"""
+       cog_bundle_version #{version} is not supported. \
+       Please update your bundle config to version #{@current_config_version}.\
+       """,
+       "#/cog_bundle_version"}],
+     []}
+  end
+  def validate(_) do
+    {:error,
+     [{"""
+       cog_bundle_version not specified. You must specify a valid bundle \
+       version. The current version is #{@current_config_version}.\
+       """,
+       "#/cog_bundle_version"}],
+     []}
   end
 
   defp fix_rules(bundle_command, rules) do

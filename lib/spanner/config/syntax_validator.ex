@@ -1,27 +1,27 @@
 defmodule Spanner.Config.SyntaxValidator do
 
-  @schema_file Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema.yaml"])
+  @current_config_version Spanner.Config.current_config_version
+  @old_config_version @current_config_version - 1
 
-  @external_resource @schema_file
+  @current_schema_file Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema_v#{@current_config_version}.yaml"])
+  @old_schema_file Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema_v#{@old_config_version}.yaml"])
 
-  @schema File.read!(@schema_file)
+  @external_resource @current_schema_file
+  @external_resource @old_schema_file
+
+  @current_schema File.read!(@current_schema_file)
+  @old_schema File.read!(@old_schema_file)
 
   @moduledoc """
   Validates bundle config syntax leveraging JsonSchema.
   """
 
   @doc """
-  Accepts a config map and validates syntax. Validate does three major checks.
-  An error can be returned during any one of these. First it does some basic
-  validation on the config using JsonSchema. Last we validate that all rules
-  at least parse.
+  Accepts a config map and validates syntax.
   """
-  @spec validate(Map.t) :: :ok | {:ok, [{String.t, String.t}]}
-  def validate(config) do
-    # Note: We could validate command calling convention with ExJsonEchema
-    # but the error that it returned was less than informative so instead
-    # we just do it manually. It may be worth revisiting in the future.
-    with {:ok, schema} <- load_schema("bundle_config_schema"),
+  @spec validate(Map.t, integer()) :: :ok | {:error, [{String.t, String.t}]}
+  def validate(config, version \\ @current_config_version) do
+    with {:ok, schema} <- load_schema(version),
          {:ok, resolved_schema} <- resolve_schema(schema),
          :ok <- ExJsonSchema.Validator.validate(resolved_schema, config),
        do: :ok
@@ -42,7 +42,8 @@ defmodule Spanner.Config.SyntaxValidator do
     end
   end
 
-  defp load_schema(_name) do
-    Spanner.Config.Parser.read_from_string(@schema)
-  end
+  defp load_schema(@old_config_version),
+    do: Spanner.Config.Parser.read_from_string(@old_schema)
+  defp load_schema(_),
+    do: Spanner.Config.Parser.read_from_string(@current_schema)
 end

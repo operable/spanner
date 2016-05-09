@@ -12,71 +12,43 @@ defmodule Spanner.Config.Validator.Test do
   end
 
   defp minimal_config do
-    %{"cog_bundle_version" => 2,
+    %{"cog_bundle_version" => 3,
       "name" => "foo",
       "version" => "0.0.1",
       "commands" => %{
         "date" => %{
-          "executable" => "/bin/date"
+          "executable" => "/bin/date",
+          "rules" => [
+            "allow"
+          ]
         }
       }
     }
   end
 
-  defp enforcing_config do
+  defp old_config do
     %{"cog_bundle_version" => 2,
       "name" => "foo",
       "version" => "0.0.1",
       "commands" => %{
-        "bar" => %{
-          "executable" => "/bin/bar",
-          "enforcing" => true}}}
-  end
-
-  defp bad_enforcing_config do
-    %{"cog_bundle_version" => 2,
-      "name" => "foo",
-      "version" => "0.0.1",
-      "commands" => %{
-        "bar" => %{
-          "executable" => "/bin/bar",
-          "enforcing" => "true"}}}
-  end
-
-  defp execution_config do
-    %{"cog_bundle_version" => 2,
-      "name" => "foo",
-      "version" => "0.1",
-      "commands" => %{
-        "bar" => %{"executable" => "/bin/bar",
-                   "enforcing" => false,
-                   "execution" => "once"},
-        "baz" => %{"executable" => "/bin/baz",
-                   "execution" => "multiple"}}}
-  end
-
-  defp bad_execution_config do
-    %{"cog_bundle_version" => 2,
-      "name" => "foo",
-      "version" => "0.1",
-      "commands" => %{
-        "bar" => %{"executable" => "/bin/bar",
-                   "execution" => "once"},
-        "baz" => %{"executable" => "/bin/baz",
-                   "execution" => "multi"}}}
+        "date" => %{
+          "executable" => "/bin/date",
+          "enforcing" => false
+        }
+      }
+    }
   end
 
   defp incomplete_rules_config do
-    %{"cog_bundle_version" => 2,
+    %{"cog_bundle_version" => 3,
       "name" => "foo",
       "version" => "0.1",
       "permissions" => ["foo:view"],
       "commands" => %{
         "bar" => %{"executable" => "/bin/bar",
-                   "execution" => "once",
                    "rules" => ["must have foo:view"]},
         "baz" => %{"executable" => "/bin/baz",
-                   "execution" => "multiple"}}}
+                   "rules" => ["allow"]}}}
   end
 
 
@@ -87,38 +59,20 @@ defmodule Spanner.Config.Validator.Test do
 
   test "bad bundle versions" do
     updated = put_in(minimal_config, ["version"], "1")
-    assert validate(updated) == {:error, [{"String \"1\" does not match pattern \"^\\\\d+\\\\.\\\\d+($|\\\\.\\\\d+$)\".", "#/version"}]}
+    assert validate(updated) == {:error, [{"String \"1\" does not match pattern \"^\\\\d+\\\\.\\\\d+($|\\\\.\\\\d+$)\".", "#/version"}], []}
     updated = put_in(minimal_config, ["version"], "0.0.1-beta")
-    assert validate(updated) == {:error, [{"String \"0.0.1-beta\" does not match pattern \"^\\\\d+\\\\.\\\\d+($|\\\\.\\\\d+$)\".", "#/version"}]}
+    assert validate(updated) == {:error, [{"String \"0.0.1-beta\" does not match pattern \"^\\\\d+\\\\.\\\\d+($|\\\\.\\\\d+$)\".", "#/version"}], []}
   end
 
   test "wrong cog_bundle_version" do
     result = update_in(minimal_config, ["cog_bundle_version"], fn(_) -> 1 end)
     |> validate
-    assert result == {:error, [{"Value 1 is not allowed in enum.", "#/cog_bundle_version"}]}
+    assert result == {:error, [{"cog_bundle_version 1 is not supported. Please update your bundle config to version 3.", "#/cog_bundle_version"}], []}
   end
 
   test "missing cog_bundle_version" do
     result = Map.delete(minimal_config, "cog_bundle_version") |> validate
-    assert result == {:error, [{"Required property cog_bundle_version was not present.", "#"}]}
-  end
-
-  test "enforcing config" do
-    assert validate(enforcing_config) == :ok
-  end
-
-  test "bad enforcing config" do
-    assert validate(bad_enforcing_config) == {:error,
-                                              [{"Type mismatch. Expected Boolean but got String.",
-                                                "#/commands/bar/enforcing"}]}
-  end
-
-  test "execution_config" do
-    assert validate(execution_config) == :ok
-  end
-
-  test "bad_execution_config" do
-    assert validate(bad_execution_config) == {:error, [{"Value \"multi\" is not allowed in enum.", "#/commands/baz/execution"}]}
+    assert result == {:error, [{"cog_bundle_version not specified. You must specify a valid bundle version. The current version is 3.", "#/cog_bundle_version"}], []}
   end
 
   test "incomplete rules" do
@@ -136,7 +90,7 @@ defmodule Spanner.Config.Validator.Test do
     config = put_in(minimal_config, ["commands", "date", "rules"], rules)
     response = validate(config)
 
-    assert response == {:error, [{"The permission 'foo:view' is not in the list of permissions.", "#/commands/date/rules/0"}]}
+    assert response == {:error, [{"The permission 'foo:view' is not in the list of permissions.", "#/commands/date/rules/0"}], []}
   end
 
   test "errors on bad rule" do
@@ -145,7 +99,13 @@ defmodule Spanner.Config.Validator.Test do
 
     response = validate(config)
 
-    assert response == {:error, [{"(Line: 1, Col: 34) References to permissions must be the literal \"allow\" or start with a command bundle name or \"site\".", "#/commands/date/rules/0"}]}
+    assert response == {:error, [{"(Line: 1, Col: 34) References to permissions must be the literal \"allow\" or start with a command bundle name or \"site\".", "#/commands/date/rules/0"}], []}
+  end
+
+  test "rules are required" do
+    config = update_in(minimal_config, ["commands", "date"], &Map.delete(&1, "rules"))
+    |> validate
+    assert config == {:error, [{"Required property rules was not present.", "#/commands/date"}], []}
   end
 
   test "errors on bad command option type" do
@@ -153,7 +113,7 @@ defmodule Spanner.Config.Validator.Test do
     config = put_in(minimal_config, ["commands", "date", "options"], options)
     response = validate(config)
 
-    assert response == {:error, [{"Value \"integer\" is not allowed in enum.", "#/commands/date/options/option_1/type"}]}
+    assert response == {:error, [{"Value \"integer\" is not allowed in enum.", "#/commands/date/options/option_1/type"}], []}
   end
 
   test "errors on bad template format" do
@@ -161,7 +121,7 @@ defmodule Spanner.Config.Validator.Test do
     config = put_in(minimal_config, ["templates"], templates)
     response = validate(config)
 
-    assert response == {:error, [{"Type mismatch. Expected Object but got String.", "#/templates/foo"}]}
+    assert response == {:error, [{"Type mismatch. Expected Object but got String.", "#/templates/foo"}], []}
   end
 
   test "errors on bad template adapter" do
@@ -169,7 +129,23 @@ defmodule Spanner.Config.Validator.Test do
     config = put_in(minimal_config, ["templates"], templates)
     response = validate(config)
 
-    assert response == {:error, [{"Schema does not allow additional properties.", "#/templates/foo/meh"}]}
+    assert response == {:error, [{"Schema does not allow additional properties.", "#/templates/foo/meh"}], []}
+  end
+
+  test "upgrading bundle versions" do
+    response = validate(old_config)
+    {:warning, config, warnings} = response
+
+    assert %{"cog_bundle_version" => 3,
+             "name" => "foo",
+             "version" => "0.0.1",
+             "commands" => %{
+               "date" => %{
+                 "executable" => "/bin/date",
+                 "rules" => ["when command is foo:date allow"]}},
+             } = config
+    assert [{"Bundle config version 2 has been deprecated. Please update to version 3.", "#/cog_bundle_version"},
+            {"Non-enforcing commands have been deprecated. Please update your bundle config to version 3.", "#/commands/date/enforcing"}] = warnings
   end
 
   # env_vars can be strings, booleans and numbers
