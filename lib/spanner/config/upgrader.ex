@@ -6,7 +6,7 @@ defmodule Spanner.Config.Upgrader do
   """
 
   @current_version 3
-  @upgradable_versions [2]
+  @upgradable_version @current_version - 1
 
   @doc """
   When possible upgrades config to the current version. Returns the upgraded
@@ -14,7 +14,7 @@ defmodule Spanner.Config.Upgrader do
   the upgrade fails.
   """
   @spec upgrade(Map.t) :: {:ok, Map.t, List.t} | {:error, List.t}
-  def upgrade(%{"cog_bundle_version" => version}=config) when version in @upgradable_versions do
+  def upgrade(%{"cog_bundle_version" => version}=config) when version == @upgradable_version do
     deprecation_msg =
       {"""
        Bundle config version #{version} has been deprecated. \
@@ -79,7 +79,10 @@ defmodule Spanner.Config.Upgrader do
               updated_errors = [{msg, location} | errors]
               {warnings, updated_errors}
             "multiple" ->
-              msg = "Execution type has been deprecated. Please update your bundle config"
+              msg = """
+              Execution type has been deprecated. \
+              Please update your bundle config to version #{@current_version}.\
+              """
               location = "#/commands/#{cmd_name}/execution"
               updated_warnings = [{msg, location} | warnings]
               {updated_warnings, errors}
@@ -103,7 +106,10 @@ defmodule Spanner.Config.Upgrader do
     Enum.reduce(commands, {[], commands},
       fn
         ({cmd_name, %{"enforcing" => enforcing}=cmd}, {warnings, commands}) when not(enforcing) ->
-          msg = "Non-enforcing commands have been deprecated. Please update your bundle config"
+          msg = """
+          Non-enforcing commands have been deprecated. \
+          Please update your bundle config to version #{@current_version}.\
+          """
           updated_warnings = [{msg, "#/commands/#{cmd_name}/enforcing"} | warnings]
 
           updated_cmd = Map.put(cmd, "rules", ["allow"])
@@ -112,7 +118,10 @@ defmodule Spanner.Config.Upgrader do
 
           {updated_warnings, updated_commands}
         ({cmd_name, %{"enforcing" => _}=cmd}, {warnings, commands}) ->
-          msg = "The 'enforcing' field has been deprecated. Please update your bundle config"
+          msg = """
+          The 'enforcing' field has been deprecated. \
+          Please update your bundle config to version #{@current_version}.\
+          """
           updated_warnings = [{msg, "#/commands/#{cmd_name}/enforcing"} | warnings]
 
           updated_cmd = Map.delete(cmd, "enforcing")

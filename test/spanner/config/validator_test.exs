@@ -145,7 +145,7 @@ defmodule Spanner.Config.Validator.Test do
                  "rules" => ["when command is foo:date allow"]}},
              } = config
     assert [{"Bundle config version 2 has been deprecated. Please update to version 3.", "#/cog_bundle_version"},
-            {"Non-enforcing commands have been deprecated. Please update your bundle config", "#/commands/date/enforcing"}] = warnings
+            {"Non-enforcing commands have been deprecated. Please update your bundle config to version 3.", "#/commands/date/enforcing"}] = warnings
   end
 
   # env_vars can be strings, booleans and numbers
