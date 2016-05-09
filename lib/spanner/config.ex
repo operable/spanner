@@ -3,6 +3,8 @@ defmodule Spanner.Config do
   alias Spanner.Config.SemanticValidator
   alias Spanner.Config.Upgrader
 
+  @current_config_version 3
+  @old_config_version @current_config_version - 1
   @config_extensions [".yaml", ".yml", ".json"]
   @config_file "config"
 
@@ -50,7 +52,7 @@ defmodule Spanner.Config do
   """
   @spec validate(Map.t) ::
     {:ok, Map.t} | {:error, List.t, List.t} | {:warning, Map.t, List.t}
-  def validate(%{"cog_bundle_version" => 3}=config) do
+  def validate(%{"cog_bundle_version" => @current_config_version}=config) do
     case SyntaxValidator.validate(config) do
       :ok ->
         config = fixup_rules(config)
@@ -64,7 +66,7 @@ defmodule Spanner.Config do
         {:error, errors, []}
     end
   end
-  def validate(config) do
+  def validate(%{"cog_bundle_version" => @old_config_version}=config) do
     case Upgrader.upgrade(config) do
       {:ok, upgraded_config, warnings} ->
         case validate(upgraded_config) do
