@@ -13,7 +13,6 @@ properties:
   cog_bundle_version:
     type: number
     enum:
-      - 2
       - 3
   name:
     type: string
