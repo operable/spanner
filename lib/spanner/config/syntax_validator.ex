@@ -1,13 +1,16 @@
 defmodule Spanner.Config.SyntaxValidator do
 
-  @schema_file_v2 Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema_v2.yaml"])
-  @schema_file_v3 Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema_v3.yaml"])
+  @current_config_version Spanner.Config.current_config_version
+  @old_config_version @current_config_version - 1
 
-  @external_resource @schema_file_v2
-  @external_resource @schema_file_v3
+  @current_schema_file Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema_v#{@current_config_version}.yaml"])
+  @old_schema_file Path.join([:code.priv_dir(:spanner), "schemas", "bundle_config_schema_v#{@old_config_version}.yaml"])
 
-  @schema_v2 File.read!(@schema_file_v2)
-  @schema_v3 File.read!(@schema_file_v3)
+  @external_resource @current_schema_file
+  @external_resource @old_schema_file
+
+  @current_schema File.read!(@current_schema_file)
+  @old_schema File.read!(@old_schema_file)
 
   @moduledoc """
   Validates bundle config syntax leveraging JsonSchema.
@@ -17,7 +20,7 @@ defmodule Spanner.Config.SyntaxValidator do
   Accepts a config map and validates syntax.
   """
   @spec validate(Map.t, integer()) :: :ok | {:error, [{String.t, String.t}]}
-  def validate(config, version \\ 3) do
+  def validate(config, version \\ @current_config_version) do
     # Note: We could validate command calling convention with ExJsonEchema
     # but the error that it returned was less than informative so instead
     # we just do it manually. It may be worth revisiting in the future.
@@ -42,8 +45,8 @@ defmodule Spanner.Config.SyntaxValidator do
     end
   end
 
-  defp load_schema(2),
-    do: Spanner.Config.Parser.read_from_string(@schema_v2)
+  defp load_schema(@old_config_version),
+    do: Spanner.Config.Parser.read_from_string(@old_schema)
   defp load_schema(_),
-    do: Spanner.Config.Parser.read_from_string(@schema_v3)
+    do: Spanner.Config.Parser.read_from_string(@current_schema)
 end

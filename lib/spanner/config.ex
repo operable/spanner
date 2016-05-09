@@ -4,9 +4,12 @@ defmodule Spanner.Config do
   alias Spanner.Config.Upgrader
 
   @current_config_version 3
-  @old_config_version @current_config_version - 1
   @config_extensions [".yaml", ".yml", ".json"]
   @config_file "config"
+
+  @doc "Returns the current supported config version"
+  def current_config_version,
+    do: @current_config_version
 
   @doc "Returns a list of valid config extensions"
   def config_extensions,
@@ -66,7 +69,9 @@ defmodule Spanner.Config do
         {:error, errors, []}
     end
   end
-  def validate(%{"cog_bundle_version" => @old_config_version}=config) do
+  # Gets triggered when we have an old bundle config to validate
+  # Upgrader will return an error if the bundle is not upgradable
+  def validate(config) do
     case Upgrader.upgrade(config) do
       {:ok, upgraded_config, warnings} ->
         case validate(upgraded_config) do

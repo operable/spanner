@@ -5,7 +5,7 @@ defmodule Spanner.Config.Upgrader do
   Attempts to upgrade bundle config to current version.
   """
 
-  @current_version 3
+  @current_version Spanner.Config.current_config_version
   @upgradable_version @current_version - 1
 
   @doc """
