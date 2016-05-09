@@ -14,43 +14,23 @@ defmodule Spanner.Config.Upgrader do
   the upgrade fails.
   """
   @spec upgrade(Map.t) :: {:ok, Map.t, List.t} | {:error, List.t}
-  def upgrade(%{"cog_bundle_version" => version}=config) when version == @upgradable_version do
+  def upgrade(%{"cog_bundle_version" => @upgradable_version}=config) do
     deprecation_msg =
       {"""
-       Bundle config version #{version} has been deprecated. \
+       Bundle config version #{@upgradable_version} has been deprecated. \
        Please update to version #{@current_version}.\
        """,
        "#/cog_bundle_version"}
     # We run the validator for the old version here. So if the user passes an
     # old version that is also invalid, we don't crash trying to access fields
     # that don't exist.
-    case SyntaxValidator.validate(config, version) do
+    case SyntaxValidator.validate(config, @upgradable_version) do
       :ok ->
         do_upgrade(config)
         |> insert_deprecation_msg(deprecation_msg)
       {:error, errors} ->
         {:error, errors, [deprecation_msg]}
     end
-  end
-  # If we get an un-upgradable version, let the user know.
-  def upgrade(%{"cog_bundle_version" => version}) do
-    {:error,
-     [{"""
-       cog_bundle_version #{version} is not supported. \
-       Please update your bundle config to version #{@current_version}.\
-       """,
-       "#/cog_bundle_version"}],
-     []}
-  end
-  # If we don't get a version, let the user know.
-  def upgrade(_) do
-    {:error,
-     [{"""
-       cog_bundle_version not specified. You must specify a valid bundle \
-       version. The current version is #{@current_version}.\
-       """,
-       "#/cog_bundle_version"}],
-     []}
   end
 
   defp do_upgrade(config) do

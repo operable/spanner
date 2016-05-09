@@ -4,6 +4,7 @@ defmodule Spanner.Config do
   alias Spanner.Config.Upgrader
 
   @current_config_version 3
+  @old_config_version @current_config_version - 1
   @config_extensions [".yaml", ".yml", ".json"]
   @config_file "config"
 
@@ -69,9 +70,7 @@ defmodule Spanner.Config do
         {:error, errors, []}
     end
   end
-  # Gets triggered when we have an old bundle config to validate
-  # Upgrader will return an error if the bundle is not upgradable
-  def validate(config) do
+  def validate(%{"cog_bundle_version" => @old_config_version}=config) do
     # Upgrader will return an upgraded config and a list of warnings
     # or an error
     case Upgrader.upgrade(config) do
@@ -88,6 +87,24 @@ defmodule Spanner.Config do
       {:error, errors, warnings} ->
         {:error, errors, warnings}
     end
+  end
+  def validate(%{"cog_bundle_version" => version}) do
+    {:error,
+     [{"""
+       cog_bundle_version #{version} is not supported. \
+       Please update your bundle config to version #{@current_config_version}.\
+       """,
+       "#/cog_bundle_version"}],
+     []}
+  end
+  def validate(_) do
+    {:error,
+     [{"""
+       cog_bundle_version not specified. You must specify a valid bundle \
+       version. The current version is #{@current_config_version}.\
+       """,
+       "#/cog_bundle_version"}],
+     []}
   end
 
   defp fix_rules(bundle_command, rules) do
