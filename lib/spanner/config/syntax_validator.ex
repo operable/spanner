@@ -21,9 +21,6 @@ defmodule Spanner.Config.SyntaxValidator do
   """
   @spec validate(Map.t, integer()) :: :ok | {:error, [{String.t, String.t}]}
   def validate(config, version \\ @current_config_version) do
-    # Note: We could validate command calling convention with ExJsonEchema
-    # but the error that it returned was less than informative so instead
-    # we just do it manually. It may be worth revisiting in the future.
     with {:ok, schema} <- load_schema(version),
          {:ok, resolved_schema} <- resolve_schema(schema),
          :ok <- ExJsonSchema.Validator.validate(resolved_schema, config),
