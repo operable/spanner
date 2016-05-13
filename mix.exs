@@ -3,7 +3,7 @@ defmodule Spanner.Mixfile do
 
   def project do
     [app: :spanner,
-     version: "0.4.0",
+     version: "0.6.0",
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -16,7 +16,7 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, github: "operable/piper"},
+    [{:piper, github: "operable/piper", tag: "0.6.0"},
 
      # For yaml parsing. yaml_elixir is a wrapper around yamerl which is a native erlang lib.
      {:yaml_elixir, "~> 1.0.0"},
