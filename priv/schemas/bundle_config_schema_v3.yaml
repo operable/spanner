@@ -8,13 +8,14 @@ required:
   - name
   - version
   - commands
-additionalProperties: false
 properties:
   cog_bundle_version:
     type: number
     enum:
       - 3
   name:
+    type: string
+  description:
     type: string
   version:
     type: string
