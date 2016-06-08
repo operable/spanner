@@ -55,12 +55,13 @@ definitions:
         type: string
   command:
     type: object
-    additionalProperties: false
     required:
       - executable
       - rules
     properties:
       executable:
+        type: string
+      description:
         type: string
       documentation:
         type: string
