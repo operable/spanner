@@ -29,11 +29,17 @@ properties:
     required:
       - image
       - tag
+    optional:
+      - binds
     properties:
       image:
         type: string
       tag:
         type: string
+      binds:
+        type: array
+        items:
+          type: string
   templates:
     type: object
     additionalProperties:

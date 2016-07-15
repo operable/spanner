@@ -3,6 +3,11 @@ defmodule Spanner.Config do
   alias Spanner.Config.SemanticValidator
   alias Spanner.Config.Upgrader
 
+  # Currently we support version n and n-1. Adding new optional fields
+  # does not require a version bump, but adding new mandatory fields,
+  # or changing the overall structure of the configuration file does
+  # require a bump
+
   @current_config_version 3
   @old_config_version @current_config_version - 1
   @config_extensions [".yaml", ".yml", ".json"]
