@@ -19,9 +19,10 @@ defmodule Spanner.Config.SyntaxValidator do
   @doc """
   Accepts a config map and validates syntax.
   """
-  @spec validate(Map.t, integer()) :: :ok | {:error, [{String.t, String.t}]}
-  def validate(config, version \\ @current_config_version) do
-    with {:ok, schema} <- load_schema(version),
+  @spec validate(Map.t) :: :ok | {:error, [{String.t, String.t}]}
+  def validate(config) do
+    with version <- Map.fetch!(config, "cog_bundle_version"),
+         {:ok, schema} <- load_schema(version),
          {:ok, resolved_schema} <- resolve_schema(schema),
          :ok <- ExJsonSchema.Validator.validate(resolved_schema, config),
        do: :ok

@@ -1,14 +1,13 @@
 defmodule Spanner.Config do
   alias Spanner.Config.SyntaxValidator
   alias Spanner.Config.SemanticValidator
-  alias Spanner.Config.Upgrader
 
   # Currently we support version n and n-1. Adding new optional fields
   # does not require a version bump, but adding new mandatory fields,
   # or changing the overall structure of the configuration file does
   # require a bump
 
-  @current_config_version 3
+  @current_config_version 4
   @old_config_version @current_config_version - 1
   @config_extensions [".yaml", ".yml", ".json"]
   @config_file "config"
@@ -61,7 +60,8 @@ defmodule Spanner.Config do
   """
   @spec validate(Map.t) ::
     {:ok, Map.t} | {:error, List.t, List.t} | {:warning, Map.t, List.t}
-  def validate(%{"cog_bundle_version" => @current_config_version}=config) do
+  def validate(%{"cog_bundle_version" => version}=config)
+    when version >= @old_config_version do
     case SyntaxValidator.validate(config) do
       :ok ->
         config = fixup_rules(config)
@@ -73,24 +73,6 @@ defmodule Spanner.Config do
         end
       {:error, errors} ->
         {:error, errors, []}
-    end
-  end
-  def validate(%{"cog_bundle_version" => @old_config_version}=config) do
-    # Upgrader will return an upgraded config and a list of warnings
-    # or an error
-    case Upgrader.upgrade(config) do
-      {:ok, upgraded_config, warnings} ->
-        # We still need to validate the upgraded config
-        case validate(upgraded_config) do
-          {:ok, validated_config} ->
-            # If everything goes well, we return the validated config
-            # and a list of warnings.
-            {:warning, validated_config, warnings}
-          {:error, errors, _} ->
-            {:error, errors, warnings}
-        end
-      {:error, errors, warnings} ->
-        {:error, errors, warnings}
     end
   end
   def validate(%{"cog_bundle_version" => version}) do
