@@ -19,6 +19,7 @@ defmodule Spanner.Config.V4ValidatorTest do
     %{"cog_bundle_version" => 4,
       "name" => "foo",
       "version" => "0.0.1",
+      "description" => "Does some foo and a bar",
       "commands" => %{
         "date" => %{
           "executable" => "/bin/date",
@@ -34,6 +35,7 @@ defmodule Spanner.Config.V4ValidatorTest do
     %{"cog_bundle_version" => 4,
       "name" => "foo",
       "version" => "0.1",
+      "description" => "Does some foo and a bar",
       "permissions" => ["foo:view"],
       "commands" => %{
         "bar" => %{"executable" => "/bin/bar",

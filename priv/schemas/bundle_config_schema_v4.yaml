@@ -6,6 +6,7 @@ type: object
 required:
   - cog_bundle_version
   - name
+  - description
   - version
   - commands
 properties:
@@ -16,6 +17,12 @@ properties:
   name:
     type: string
   description:
+    type: string
+  long_descirption:
+    type: string
+  author:
+    type: string
+  homepage:
     type: string
   version:
     type: string
@@ -71,8 +78,16 @@ definitions:
         type: string
       description:
         type: string
-      documentation:
+      long_description:
         type: string
+      examples:
+        type: string
+      arguments:
+        type: string
+      subcommands:
+        type: object
+        additionalProperties:
+          type: string
       rules:
         type: array
         items:
