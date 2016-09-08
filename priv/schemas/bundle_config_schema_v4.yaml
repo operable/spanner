@@ -18,7 +18,7 @@ properties:
     type: string
   description:
     type: string
-  long_descirption:
+  long_description:
     type: string
   author:
     type: string
