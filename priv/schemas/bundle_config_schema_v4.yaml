@@ -1,6 +1,6 @@
 ---
 "$schema": http://json-schema.org/draft-04/schema#
-title: Bundle Config v3
+title: Bundle Config v4
 description: A config schema for bundles
 type: object
 required:
