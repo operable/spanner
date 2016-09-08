@@ -1,20 +1,28 @@
 ---
 "$schema": http://json-schema.org/draft-04/schema#
-title: Bundle Config v2
+title: Bundle Config v3
 description: A config schema for bundles
 type: object
 required:
   - cog_bundle_version
   - name
+  - description
   - version
   - commands
-additionalProperties: false
 properties:
   cog_bundle_version:
     type: number
     enum:
-      - 2
+      - 4
   name:
+    type: string
+  description:
+    type: string
+  long_descirption:
+    type: string
+  author:
+    type: string
+  homepage:
     type: string
   version:
     type: string
@@ -28,15 +36,23 @@ properties:
     required:
       - image
       - tag
+    optional:
+      - binds
     properties:
       image:
         type: string
       tag:
         type: string
+      binds:
+        type: array
+        items:
+          type: string
   templates:
     type: object
-    additionalProperties:
-      "$ref": "#/definitions/template"
+    patternProperties:
+      "^[A-Za-z0-9_]+$":
+        "$ref": "#/definitions/template"
+    additionalProperties: false
   commands:
     type: object
     additionalProperties:
@@ -46,27 +62,32 @@ properties:
 definitions:
   template:
     type: object
-    additionalProperties: false
     properties:
-      slack:
+      body:
         type: string
-      hipchat:
-        type: string
+    required:
+      - body
+    additionalProperties: false
   command:
     type: object
     required:
       - executable
+      - rules
     properties:
       executable:
         type: string
-      documentation:
+      description:
         type: string
-      execution:
-        enum:
-          - once
-          - multiple
-      enforcing:
-        type: boolean
+      long_description:
+        type: string
+      examples:
+        type: string
+      arguments:
+        type: string
+      subcommands:
+        type: object
+        additionalProperties:
+          type: string
       rules:
         type: array
         items:
@@ -86,6 +107,7 @@ definitions:
     type: object
     required:
       - type
+    additionalProperties: false
     properties:
       type:
         type: string
@@ -102,4 +124,3 @@ definitions:
         type: boolean
       short_flag:
         type: string
-
