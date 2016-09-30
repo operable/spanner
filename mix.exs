@@ -3,7 +3,7 @@ defmodule Spanner.Mixfile do
 
   def project do
     [app: :spanner,
-     version: "0.14.0",
+     version: "0.14.1",
      elixir: "~> 1.3.1",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -16,7 +16,7 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, github: "operable/piper", branch: "v0.14.1"},
+    [{:piper, github: "operable/piper", tag: "0.14.1"},
      {:yaml_elixir, "~> 1.2"},
      # yaml_elixir should define this, but the current release isn't
      # pulling it from Hex. Once it does, we can remove this.
