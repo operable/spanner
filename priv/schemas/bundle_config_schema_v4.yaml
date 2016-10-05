@@ -47,6 +47,27 @@ properties:
         type: array
         items:
           type: string
+  config:
+    type: object
+    optional:
+      - notes
+      - env
+    properties:
+      notes:
+        type: string
+      env:
+        type: array
+        items:
+          type: object
+          required:
+            - var
+          optional:
+            - description
+          properties:
+            description:
+              type: string
+            var:
+              type: string
   templates:
     type: object
     patternProperties:
