@@ -8,3 +8,5 @@ compile:
 
 test:
 	mix test
+
+.PHONY: test
