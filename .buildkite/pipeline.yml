@@ -4,6 +4,6 @@ env:
 
 steps:
   - command: make ci
-    label: make ci
+    label: :cogops: Testing :elixir: Using :docker: on :buildkite:!!! :joy:
     agents:
       - docker=1.12.1
