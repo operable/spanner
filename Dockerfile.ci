@@ -18,6 +18,7 @@ RUN wget https://github.com/elixir-lang/elixir/releases/download/v1.3.1/Precompi
     unzip -d /usr/local Precompiled.zip && rm -f /usr/local/bin/*.bat && rm -f Precompiled.zip
 
 RUN mix local.hex --force
+RUN mix local.rebar --force
 
 WORKDIR /code
 COPY . /code
