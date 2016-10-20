@@ -16,7 +16,7 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, github: "operable/piper"},
+    [{:piper, github: "operable/piper", branch: "kevsmith/interpolating-parser"},
      {:yaml_elixir, "~> 1.2"},
      # yaml_elixir should define this, but the current release isn't
      # pulling it from Hex. Once it does, we can remove this.
