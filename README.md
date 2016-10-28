@@ -1,9 +1,8 @@
-# Spanner:
+# Spanner
 
-Spanner defines the interfaces used by [Cog](https://github.com/operable/cog) and [Relay](https://github.com/operable/relay) to manage and execute
-ChatOps commands.
+[![Build status](https://badge.buildkite.com/50474be33cfaad594655cd9b719d35e08284ab6da8bc23c422.svg?branch=master)](https://buildkite.com/operable/spanner)
 
-[![Build status](https://badge.buildkite.com/50474be33cfaad594655cd9b719d35e08284ab6da8bc23c422.svg)](https://buildkite.com/operable/spanner)
+Spanner defines the bundle interfaces used by [Cog](https://github.com/operable/cog).
 
 ## Filing issues
 
