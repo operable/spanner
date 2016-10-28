@@ -18,9 +18,6 @@ defmodule Spanner.Mixfile do
   defp deps do
     [{:piper, github: "operable/piper"},
      {:yaml_elixir, "~> 1.2"},
-     # yaml_elixir should define this, but the current release isn't
-     # pulling it from Hex. Once it does, we can remove this.
-     {:yamerl, "0.3.2"},
      {:ex_json_schema, "~> 0.5"}]
   end
 end
