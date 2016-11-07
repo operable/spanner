@@ -1,5 +1,5 @@
 %{"ex_json_schema": {:hex, :ex_json_schema, "0.5.1", "83356e5a673d6fbe75da612a44b8f84942711630414d8be5e342f3597b03939a", [:mix], []},
-  "piper": {:git, "https://github.com/operable/piper.git", "fc2e22bf82c9ddc5e8b19f3bb3ecb03878023041", []},
+  "piper": {:git, "https://github.com/operable/piper.git", "bb1f44a1422e6d162f1dcfb4e4609fe86f4418f5", []},
   "poison": {:hex, :poison, "2.2.0", "4763b69a8a77bd77d26f477d196428b741261a761257ff1cf92753a0d4d24a63", [:mix], []},
   "uuid": {:hex, :uuid, "1.1.5", "96cb36d86ee82f912efea4d50464a5df606bf3f1163d6bdbb302d98474969369", [:mix], []},
   "yamerl": {:hex, :yamerl, "0.3.2", "9eac1537d251e926f47763ab1db0d9e6e8f2397646c290d58aa6ceebc6832fb7", [:rebar3], []},
