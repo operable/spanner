@@ -3,7 +3,7 @@ defmodule Spanner.Mixfile do
 
   def project do
     [app: :spanner,
-     version: "0.16.0",
+     version: "0.16.1",
      elixir: "~> 1.3.1",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -16,7 +16,7 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, github: "operable/piper", tag: "0.16.0"},
+    [{:piper, github: "operable/piper", tag: "0.16.1"},
      {:yaml_elixir, "~> 1.2"},
      {:ex_json_schema, "~> 0.5"}]
   end
