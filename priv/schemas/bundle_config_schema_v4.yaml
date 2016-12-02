@@ -109,6 +109,8 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      output:
+        type: string
       rules:
         type: array
         items:
