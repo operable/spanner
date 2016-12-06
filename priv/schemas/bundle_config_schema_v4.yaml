@@ -110,7 +110,15 @@ definitions:
         additionalProperties:
           type: string
       output:
-        type: string
+        type: object
+        optional:
+          - description
+          - example
+        properties:
+          description:
+            type: string
+          example:
+            type: string
       rules:
         type: array
         items:
