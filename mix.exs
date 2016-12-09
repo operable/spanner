@@ -16,7 +16,7 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, github: "operable/piper"},
+    [{:piper, github: "operable/piper", branch: "v0.17.0"},
      {:yaml_elixir, "~> 1.2"},
      {:ex_json_schema, "~> 0.5"}]
   end
