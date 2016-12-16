@@ -1,6 +1,12 @@
-defmodule Spanner.Config.V3Validator do
+defmodule Spanner.Config.V5ValidatorTest do
+  # This is effectively the same as the v3 validator test, but with
+  # altered template tests, since that's the only difference between
+  # the two versions.
+
   use ExUnit.Case, async: true
   alias Spanner.Config
+
+  @this_version 5
 
   defp validate(config) do
     case Config.validate(config) do
@@ -12,9 +18,10 @@ defmodule Spanner.Config.V3Validator do
   end
 
   defp minimal_config do
-    %{"cog_bundle_version" => 3,
+    %{"cog_bundle_version" => @this_version,
       "name" => "foo",
       "version" => "0.0.1",
+      "description" => "Does some foo and a bar",
       "commands" => %{
         "date" => %{
           "executable" => "/bin/date",
@@ -27,9 +34,10 @@ defmodule Spanner.Config.V3Validator do
   end
 
   defp incomplete_rules_config do
-    %{"cog_bundle_version" => 3,
+    %{"cog_bundle_version" => @this_version,
       "name" => "foo",
       "version" => "0.1",
+      "description" => "Does some foo and a bar",
       "permissions" => ["foo:view"],
       "commands" => %{
         "bar" => %{"executable" => "/bin/bar",
@@ -37,8 +45,6 @@ defmodule Spanner.Config.V3Validator do
         "baz" => %{"executable" => "/bin/baz",
                    "rules" => ["allow"]}}}
   end
-
-
 
   test "minimal config" do
     assert validate(minimal_config) == :ok
@@ -54,12 +60,12 @@ defmodule Spanner.Config.V3Validator do
   test "wrong cog_bundle_version" do
     result = update_in(minimal_config, ["cog_bundle_version"], fn(_) -> 1 end)
     |> validate
-    assert result == {:error, [{"cog_bundle_version 1 is not supported. Please update your bundle config to version 4.", "#/cog_bundle_version"}], []}
+    assert result == {:error, [{"cog_bundle_version 1 is not supported. Please update your bundle config to version #{Spanner.Config.current_config_version()}.", "#/cog_bundle_version"}], []}
   end
 
   test "missing cog_bundle_version" do
     result = Map.delete(minimal_config, "cog_bundle_version") |> validate
-    assert result == {:error, [{"cog_bundle_version not specified. You must specify a valid bundle version. The current version is 4.", "#/cog_bundle_version"}], []}
+    assert result == {:error, [{"cog_bundle_version not specified. You must specify a valid bundle version. The current version is #{Spanner.Config.current_config_version()}.", "#/cog_bundle_version"}], []}
   end
 
   test "incomplete rules" do
@@ -103,22 +109,6 @@ defmodule Spanner.Config.V3Validator do
     assert response == {:error, [{"Value \"integer\" is not allowed in enum.", "#/commands/date/options/option_1/type"}], []}
   end
 
-  test "errors on bad template format" do
-    templates = %{"foo" => "Some template"}
-    config = put_in(minimal_config, ["templates"], templates)
-    response = validate(config)
-
-    assert response == {:error, [{"Type mismatch. Expected Object but got String.", "#/templates/foo"}], []}
-  end
-
-  test "errors on bad template adapter" do
-    templates = %{"foo" => %{"meh" => "{{content}}"}}
-    config = put_in(minimal_config, ["templates"], templates)
-    response = validate(config)
-
-    assert response == {:error, [{"Schema does not allow additional properties.", "#/templates/foo/meh"}], []}
-  end
-
   # env_vars can be strings, booleans and numbers
   Enum.each(["string", true, 4], fn(type) ->
     test "env_vars can be a #{type}" do
@@ -129,5 +119,31 @@ defmodule Spanner.Config.V3Validator do
       assert response == :ok
     end
   end)
+
+  ########################################################################
+  # Templates
+
+  test "templates are validated" do
+    templates = %{"blah" => %{"body" => "blahblah"},
+                  "foo" => %{"body" => "foofoo"}}
+    config = put_in(minimal_config, ["templates"], templates)
+    assert :ok == validate(config)
+  end
+
+  test "errors on bad template format" do
+    templates = %{"foo" => "Some template"}
+    config = put_in(minimal_config, ["templates"], templates)
+    response = validate(config)
+    assert {:error, [{"Type mismatch. Expected Object but got String.", "#/templates/foo"}], []} == response
+  end
+
+  test "templates must have proper names" do
+    templates = %{"1?" => %{"body" => "Some template"}}
+    config = put_in(minimal_config, ["templates"], templates)
+    response = validate(config)
+
+    # Not the greatest error message for this, sadly :(
+    assert response == {:error, [{"Schema does not allow additional properties.", "#/templates/1?"}], []}
+  end
 
 end

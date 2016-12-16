@@ -58,12 +58,12 @@ defmodule Spanner.Config.V4ValidatorTest do
   test "wrong cog_bundle_version" do
     result = update_in(minimal_config, ["cog_bundle_version"], fn(_) -> 1 end)
     |> validate
-    assert result == {:error, [{"cog_bundle_version 1 is not supported. Please update your bundle config to version 4.", "#/cog_bundle_version"}], []}
+    assert result == {:error, [{"cog_bundle_version 1 is not supported. Please update your bundle config to version #{Spanner.Config.current_config_version}.", "#/cog_bundle_version"}], []}
   end
 
   test "missing cog_bundle_version" do
     result = Map.delete(minimal_config, "cog_bundle_version") |> validate
-    assert result == {:error, [{"cog_bundle_version not specified. You must specify a valid bundle version. The current version is 4.", "#/cog_bundle_version"}], []}
+    assert result == {:error, [{"cog_bundle_version not specified. You must specify a valid bundle version. The current version is #{Spanner.Config.current_config_version}.", "#/cog_bundle_version"}], []}
   end
 
   test "incomplete rules" do

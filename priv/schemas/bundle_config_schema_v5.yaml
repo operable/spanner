@@ -1,21 +1,28 @@
 ---
 "$schema": http://json-schema.org/draft-04/schema#
-title: Bundle Config v3
+title: Bundle Config v5
 description: A config schema for bundles
 type: object
 required:
   - cog_bundle_version
   - name
+  - description
   - version
   - commands
 properties:
   cog_bundle_version:
     type: number
     enum:
-      - 3
+      - 5
   name:
     type: string
   description:
+    type: string
+  long_description:
+    type: string
+  author:
+    type: string
+  homepage:
     type: string
   version:
     type: string
@@ -40,10 +47,33 @@ properties:
         type: array
         items:
           type: string
+  config:
+    type: object
+    optional:
+      - notes
+      - env
+    properties:
+      notes:
+        type: string
+      env:
+        type: array
+        items:
+          type: object
+          required:
+            - var
+          optional:
+            - description
+          properties:
+            description:
+              type: string
+            var:
+              type: string
   templates:
     type: object
-    additionalProperties:
-      "$ref": "#/definitions/template"
+    patternProperties:
+      "^[A-Za-z0-9_]+$":
+        "$ref": "#/definitions/template"
+    additionalProperties: false
   commands:
     type: object
     additionalProperties:
@@ -53,12 +83,12 @@ properties:
 definitions:
   template:
     type: object
-    additionalProperties: false
     properties:
-      slack:
+      body:
         type: string
-      hipchat:
-        type: string
+    required:
+      - body
+    additionalProperties: false
   command:
     type: object
     required:
@@ -69,8 +99,26 @@ definitions:
         type: string
       description:
         type: string
-      documentation:
+      long_description:
         type: string
+      examples:
+        type: string
+      arguments:
+        type: string
+      subcommands:
+        type: object
+        additionalProperties:
+          type: string
+      output:
+        type: object
+        optional:
+          - description
+          - example
+        properties:
+          description:
+            type: string
+          example:
+            type: string
       rules:
         type: array
         items:
@@ -107,4 +155,3 @@ definitions:
         type: boolean
       short_flag:
         type: string
-
