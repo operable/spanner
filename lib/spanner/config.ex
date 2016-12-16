@@ -6,8 +6,13 @@ defmodule Spanner.Config do
   # does not require a version bump, but adding new mandatory fields,
   # or changing the overall structure of the configuration file does
   # require a bump
-
-  @current_config_version 4
+  #
+  # Also of note: strictly speaking, this version also needs to
+  # encompass the notion of the execution environment the bundle is
+  # intended to operate in. We don't really have a formal way to
+  # represent that right now, so it can end up getting folded into
+  # this version number.
+  @current_config_version 5
   @old_config_version @current_config_version - 1
   @config_extensions [".yaml", ".yml", ".json"]
   @config_file "config"
