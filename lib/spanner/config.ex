@@ -13,13 +13,17 @@ defmodule Spanner.Config do
   # represent that right now, so it can end up getting folded into
   # this version number.
   @current_config_version 5
-  @old_config_version @current_config_version - 1
+  @minimum_config_version @current_config_version - 1
   @config_extensions [".yaml", ".yml", ".json"]
   @config_file "config"
 
   @doc "Returns the current supported config version"
   def current_config_version,
     do: @current_config_version
+
+  @doc "Returns the minimum supported config version"
+  def minimum_config_version,
+    do: @minimum_config_version
 
   @doc "Returns a list of valid config extensions"
   def config_extensions,
@@ -66,7 +70,7 @@ defmodule Spanner.Config do
   @spec validate(Map.t) ::
     {:ok, Map.t} | {:error, List.t, List.t} | {:warning, Map.t, List.t}
   def validate(%{"cog_bundle_version" => version}=config)
-    when version >= @old_config_version do
+    when version >= @minimum_config_version do
     case SyntaxValidator.validate(config) do
       :ok ->
         config = fixup_rules(config)
