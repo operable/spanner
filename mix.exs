@@ -7,6 +7,10 @@ defmodule Spanner.Mixfile do
      elixir: "~> 1.3.1",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     test_coverage: [tool: ExCoveralls],
+     preferred_cli_env: ["coveralls": :test,
+                         "coveralls.html": :test,
+                         "coveralls.travis": :test],
      deps: deps]
   end
 
@@ -18,6 +22,8 @@ defmodule Spanner.Mixfile do
   defp deps do
     [{:piper, github: "operable/piper"},
      {:yaml_elixir, "~> 1.2"},
-     {:ex_json_schema, "~> 0.5"}]
+     {:ex_json_schema, "~> 0.5"},
+
+     {:excoveralls, "~> 0.6", only: :test}]
   end
 end
