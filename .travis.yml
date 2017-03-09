@@ -1,8 +1,14 @@
-language: elixir
-elixir: 1.3.4
-otp_release: 19.1
+sudo: required
 
-script: mix coveralls.travis
+services:
+  - docker
+
+before_install:
+  - docker build -t operable/spanner-testing -f Dockerfile.ci .
+
+# Need the job ID in order to upload the Coveralls data
+script:
+  - docker run -it --rm --env="TRAVIS_JOB_ID=${TRAVIS_JOB_ID}" operable/spanner-testing mix coveralls.travis
 
 notifications:
   slack:

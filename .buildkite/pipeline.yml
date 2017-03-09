@@ -1,7 +1,0 @@
-steps:
-  - label: ":elixir: Unit Tests"
-    command: make ci
-    plugins:
-      docker-compose:
-        run: test
-        config: docker-compose.ci.yml
