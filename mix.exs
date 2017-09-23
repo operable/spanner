@@ -4,14 +4,14 @@ defmodule Spanner.Mixfile do
   def project do
     [app: :spanner,
      version: "1.1.0",
-     elixir: "~> 1.3.1",
+     elixir: "~> 1.5.1",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      test_coverage: [tool: ExCoveralls],
      preferred_cli_env: ["coveralls": :test,
                          "coveralls.html": :test,
                          "coveralls.travis": :test],
-     deps: deps]
+     deps: deps()]
   end
 
   def application do
@@ -20,10 +20,10 @@ defmodule Spanner.Mixfile do
   end
 
   defp deps do
-    [{:piper, github: "operable/piper"},
-     {:yaml_elixir, "~> 1.2"},
+    [{:piper, github: "davejlong/piper", branch: "elixir-upgrade"},
+     {:yaml_elixir, "~> 1.3"},
      {:ex_json_schema, "~> 0.5"},
 
-     {:excoveralls, "~> 0.6", only: :test}]
+     {:excoveralls, "~> 0.7", only: :test}]
   end
 end
