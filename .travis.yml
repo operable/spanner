@@ -5,6 +5,7 @@ otp_release:
   - 20.0
 
 before_install:
+  - mix do local.hex --force, local.rebar --force
   - MIX_ENV=test mix deps.get
 script:
   - "MIX_ENV=test mix coveralls.travis"
